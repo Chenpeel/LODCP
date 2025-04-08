@@ -1,0 +1,8 @@
+.pio
+.vscode
+.env
+/build/
+data
+*.bin
+*.elf
+prompt.md

@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  esp32-builder:
+    build:
+      context: ../ # 指向项目根目录
+      dockerfile: docker/Dockerfile # Dockerfile 路径
+    volumes:
+      - ./firmware:/workspace/firmware
+      - ~/.ccache:/root/.ccache # 加速编译
+    devices:
+      - ${SERIAL_DEVICE:-/dev/ttyUSB0}:/dev/ttyUSB0 # 动态串口设备
+    environment:
+      - IDF_TARGET=esp32
+      - ESPPORT=/dev/ttyUSB0 # 默认串口
+      - IDF_CCACHE_ENABLE=1 # 启用编译缓存
+      - IDF_BUILD_PARALLEL_LEVEL=4 # 并行编译
+    tty: true
+    entrypoint: /entrypoint.sh # 使用统一入口脚本
+
+volumes:
+  esp-idf-cache: # 持久化工具链
+  ccache-vol: # 持久化编译缓存

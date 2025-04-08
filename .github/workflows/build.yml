@@ -1,0 +1,41 @@
+name: ESP32 Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 设置 ESP-IDF 环境
+      - name: Set up ESP-IDF
+        uses: espressif/esp-idf-ci-action@v2
+        with:
+          version: v5.1
+
+      # 安装依赖
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-opencv
+
+      # 编译项目
+      - name: Build project
+        run: idf.py build
+
+      # 可选：上传构建产物
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware
+          path: build/
