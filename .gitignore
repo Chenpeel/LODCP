@@ -9,3 +9,4 @@ prompt.md
 __pycache__
 logs
 runs
+*.pt
