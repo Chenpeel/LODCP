@@ -2,3 +2,6 @@ torch
 torchvision
 torchaudio
 ultralytics
+yolov5
+kagglehub
+openxlab
