@@ -2,6 +2,7 @@ import os
 import kagglehub
 import shutil
 import warnings
+import openxlab
 warnings.simplefilter("ignore")
 
 data_dir = "data"
@@ -36,6 +37,52 @@ def task3():
     else:
         print("KITTI道路数据集已存在")
 
+def task4():
+    ccpd_dest = os.path.join(data_dir,"ccpd-dataset")
+    if not os.path.exists(ccpd_dest):
+        print("正在下载CCPD数据集...")
+        ccpd_path = kagglehub.dataset_download("mdfahimbinamin/car-crash-or-collision-prediction-dataset")
+        shutil.move(ccpd_path, ccpd_dest)
+    else:
+        print("CCPD数据集已存在")
+
+
+def task5():
+    import os
+
+    os.environ["HTTP_PROXY"] = ""
+    os.environ["HTTPS_PROXY"] = ""
+    os.environ["NO_PROXY"] = "openapi.openxlab.org.cn"
+    openxlab.login(ak='wyv9qm5w0k9yjrn8evgx', sk='a1m3q0kjgognbarezdknbg74zw69dpvzwy5mpbr2') # 进行登录，输入对应的AK/SK，可在个人中心添加AK/SK
+
+    from openxlab.dataset import info
+    info(dataset_repo='OpenDataLab/ApolloScape') #数据集信息查看
+
+    from openxlab.dataset import get
+    get(dataset_repo='OpenDataLab/ApolloScape', target_path='data/apolloscapelane') # 数据集下载
+
+    from openxlab.dataset import download
+    download(dataset_repo='OpenDataLab/ApolloScape',source_path='/README.md', target_path='data/apolloscapelane') #数据集文件下载
+
+def task6():
+    import os
+
+    os.environ["HTTP_PROXY"] = ""
+    os.environ["HTTPS_PROXY"] = ""
+    os.environ["NO_PROXY"] = "openapi.openxlab.org.cn"
+    openxlab.login(ak='wyv9qm5w0k9yjrn8evgx', sk='a1m3q0kjgognbarezdknbg74zw69dpvzwy5mpbr2') # 进行登录，输入对应的AK/SK，可在个人中心添加AK/SK
+
+    from openxlab.dataset import info
+    info(dataset_repo='OpenDataLab/CalTech_Lanes')
+
+    from openxlab.dataset import get
+    get(dataset_repo='OpenDataLab/CalTech_Lanes', target_path='data/caltech_lanes') # 数据集下载
+
+    from openxlab.dataset import download
+    download(dataset_repo='OpenDataLab/CalTech_Lanes',source_path='/README.md', target_path='data/caltech_lanes') #数据集文件下载
+
+
+
 if __name__ == "__main__":
     prepare_dir()
-    task2()
+    task6 ()

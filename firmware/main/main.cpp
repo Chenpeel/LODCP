@@ -1,9 +1,11 @@
 #include "esp_camera.h"
+#include "esp_dsp.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "img_converters.h"
-
 static const char *TAG = "ESP32-CAM";
 
 // 摄像头配置

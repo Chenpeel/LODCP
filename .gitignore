@@ -7,3 +7,5 @@ data
 *.elf
 prompt.md
 __pycache__
+logs
+runs

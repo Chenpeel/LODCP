@@ -1,4 +1,4 @@
-opencv-python
-numpy
-pillow
-albumentations
+torch
+torchvision
+torchaudio
+ultralytics
