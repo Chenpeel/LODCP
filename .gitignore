@@ -6,3 +6,4 @@ data
 *.bin
 *.elf
 prompt.md
+__pycache__
