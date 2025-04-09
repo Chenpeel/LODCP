@@ -1,20 +1,23 @@
 serial_port: ""
 
 data_dir: "data"
-kitti_path: "data/kitti-road/"
 bdd100k_path: "data/bdd100k-dataset"
 bdd_json_train: "det_v2_train_release.json"
 bdd_json_val: "det_v2_val_release.json"
 
-cache_dir: "data/cache"
 target_size: [256, 512]
-batch_size: 289
+batch_size: 500
 num_workers: 8
 
 train_dir: "data/processed_data/train"
 val_dir: "data/processed_data/val"
+test_dir: "data/processed_data/test"
 shuffle: true
 
 epochs: 50
 learning_rate: 1e-4
-"model_save_path": "models/unet_model.h5"
+"model_save_path": "models/unet_model.keras"
+early_stop_patience: 15
+reduce_lr_patience: 8
+
+log_dir: "logs"

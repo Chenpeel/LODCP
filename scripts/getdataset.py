@@ -39,4 +39,3 @@ def task3():
 if __name__ == "__main__":
     prepare_dir()
     task2()
-    task3()
