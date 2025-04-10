@@ -57,24 +57,13 @@ def train_model():
     with open(args['data'], 'r') as f:
         data_config = yaml.safe_load(f)
 
-    # 验证数据配置
-    required_fields = ['train', 'val', 'nc', 'names', 'augmentation']
-    for field in required_fields:
-        if field not in data_config:
-            raise ValueError(f"Field required [type=missing, input_value={data_config}, input_type=dict]")
-
     LOGGER.info(colorstr('blue', 'bold', '\nTraining parameters:'))
     for k, v in args.items():
         LOGGER.info(f"{k}: {colorstr('white', str(v))}")
 
-    # 使用新版autocast API
-    if hasattr(torch, 'amp'):
-        autocast = torch.amp.autocast
-    else:
-        autocast = torch.cuda.amp.autocast
-
+    # 使用新的 autocast 调用方式
     try:
-        with autocast('cuda'):
+        with torch.amp.autocast('cuda'):
             train.run(**args)
         convert_log_to_csv()
     except Exception as e:
