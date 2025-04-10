@@ -72,12 +72,12 @@ def train_fast_scnn():
 
     # 训练循环
     best_mIoU = 0.0
-    for epoch in range(300):
+    for epoch in range(500):
         model.train()
         train_loss = 0.0
 
         # 训练阶段
-        with tqdm(train_loader, desc=f'Epoch {epoch+1}/300 [训练]') as pbar:
+        with tqdm(train_loader, desc=f'Epoch {epoch+1}/500 [训练]') as pbar:
             for images, masks in pbar:
                 images, masks = images.to(device), masks.to(device)
 
@@ -141,7 +141,7 @@ def train_fast_scnn():
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ])
 
-        print(f"Epoch {epoch+1}/300 - Loss: {avg_train_loss:.4f}/{avg_val_loss:.4f} | "
+        print(f"Epoch {epoch+1}/500 - Loss: {avg_train_loss:.4f}/{avg_val_loss:.4f} | "
               f"mIoU: {avg_mIoU:.4f} (Road: {avg_class_iou[0]:.4f}, Lane: {avg_class_iou[1]:.4f}) | "
               f"LR: {current_lr:.2e}")
 
