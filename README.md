@@ -1,6 +1,6 @@
 # 基于深度学习的车辆道路障碍检测及碰撞预测方法研究
 
-## Background 
+## Background
 
 ​		随着汽车工业的快速发展和城市交通密度的增加，交通事故成为全球关注的重大问题，对人类生命财产安全构成了严峻威胁。传统的车辆安全辅助系统多依赖高成本的硬件或复杂的计算平台，难以在广泛场景中普及。而随着深度学习和嵌入式设备技术的进步，通过低成本、高效能的嵌入式系统实现车辆的实时感知和智能决策成为可能。
 
@@ -22,7 +22,7 @@
 
 [3] Zhang Y, Guo Z, Wu J, et al. Real-time vehicle detection based on improved yolo v5[J]. Sustainability, 2022, 14(19): 12274.
 
-[4] Jocher G, Chaurasia A, Stoken A, et al. ultralytics/yolov5: v7. 0-yolov5 sota realtime instance segmentation[J]. Zenodo, 2022. 
+[4] Jocher G, Chaurasia A, Stoken A, et al. ultralytics/yolov5: v7. 0-yolov5 sota realtime instance segmentation[J]. Zenodo, 2022.
 
 [5] 何永明, 邢婉钰, 魏堃, 等. 超高速公路自动驾驶车辆换道轨迹规划策略[J]. Journal of South China University of Technology (Natural Science Edition), 2024, 52(4).
 
@@ -35,3 +35,24 @@
 [9] Wang L, Liu X, Ma J, et al. Real-time steel surface defect detection with improved multi-scale YOLO-v5[J]. Processes, 2023, 11(5): 1357.
 
 [10] Kurniawan H, Hariyanto S. Designing Home Security With Esp32-Cam and IoT-Based Alarm Notification Using Telegram[J]. bit-Tech, 2023, 6(2): 95-102.
+
+
+
+
+```mermaid
+sequenceDiagram
+    participant ESP32 as ESP32-CAM
+    participant Detector as 图像分割 () + 目标检测(YOLOv5)
+    participant Tracker as 目标跟踪(DeepSORT)    
+    participant predictor as 碰撞预测
+	  participant Visualizer as 可视化
+    
+    ESP32->>Detector: 发送当前帧(Frame N)
+    Detector->>Tracker: 检测结果(bboxes+classes)
+    Tracker->>Tracker: 更新轨迹(匹配新旧目标)
+    Tracker->>predictor: 轨迹历史数据
+    predictor->>predictor: 计算速度/预测位置
+    predictor->>Visualizer: 碰撞风险等级
+    Visualizer->>Visualizer: 叠加车道线+跟踪框+风险提示
+
+```

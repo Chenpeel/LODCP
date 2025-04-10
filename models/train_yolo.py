@@ -28,5 +28,5 @@ train.run(
     epochs=100,
     weights='yolov5s.pt',
     project='runs/train',
-    name='yolov5s_bdd100k'
+    name='yolov5s_bdd100k',
 )

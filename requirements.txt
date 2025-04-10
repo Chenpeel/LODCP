@@ -5,3 +5,6 @@ ultralytics
 yolov5
 kagglehub
 openxlab
+albumentations
+tensorboard
+tqdm
