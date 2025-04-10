@@ -58,12 +58,13 @@ def train_fast_scnn():
     # 准备数据
     print("准备数据集...")
     train_set, val_set = prepare_datasets()
-    train_loader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_set, batch_size=8, shuffle=False, num_workers=2)
+    train_loader = DataLoader(train_set, batch_size=64, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_set, batch_size=32, shuffle=False, num_workers=2)
     print(f"训练集: {len(train_set)} 样本, 验证集: {len(val_set)} 样本")
 
     # 初始化模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     model = EnhancedFastSCNN(num_classes=2).to(device)
     criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 4.0], device=device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
