@@ -67,7 +67,7 @@ def train_fast_scnn():
     model = EnhancedFastSCNN(num_classes=2).to(device)
     criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 4.0], device=device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
-    scheduler = OneCycleLR(optimizer, max_lr=1e-3, total_steps=300*len(train_loader))
+    scheduler = OneCycleLR(optimizer, max_lr=1e-3, total_steps=500*len(train_loader))
     scaler = torch.cuda.amp.GradScaler()
 
     # 训练循环
