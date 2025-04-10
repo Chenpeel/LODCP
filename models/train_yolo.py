@@ -1,18 +1,25 @@
 import os
-import yaml
 import torch
+import warnings
 from yolov5 import train
 from yolov5.utils.general import colorstr, LOGGER
 from yolov5.utils.downloads import attempt_download
 from pathlib import Path
-import warnings
+from PIL import ImageFont
+
+try:
+    ImageFont.getsize
+except AttributeError:
+    def _getsize(font, text):
+        left, top, right, bottom = font.getbbox(text)
+        return right - left, bottom - top
+    ImageFont.getsize = _getsize
 
 # 配置环境
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"  # 国内镜像站
-warnings.filterwarnings("ignore", message="torch.cuda.amp.autocast.*")  # 临时忽略警告
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+warnings.filterwarnings("ignore", category=UserWarning)  # 忽略所有用户警告
 
 def train_model():
-    # 训练参数配置
     args = {
         'weights': 'yolov5s.pt',
         'data': 'data/bdd100k-yolo/bdd100k.yaml',
@@ -37,64 +44,51 @@ def train_model():
 
     # 确保模型文件存在
     if not os.path.exists(args['weights']):
-        LOGGER.info(f"{colorstr('yellow', 'bold', 'Downloading weights...')}")
+        LOGGER.info(f"{colorstr('yellow', 'Downloading weights...')}")
         attempt_download(args['weights'])
 
-    # 检查数据配置文件
+    # 检查数据配置
     if not os.path.exists(args['data']):
-        raise FileNotFoundError(f"Data config file {args['data']} not found!")
+        raise FileNotFoundError(f"Data config {args['data']} not found!")
 
-    print(colorstr('blue', 'bold', '\nStarting training with parameters:'))
+    LOGGER.info(colorstr('blue', 'bold', '\nTraining parameters:'))
     for k, v in args.items():
-        print(f"{colorstr('green', k)}: {colorstr('white', str(v))}")
+        LOGGER.info(f"{k}: {colorstr('white', str(v))}")
+
+    # 使用新版autocast API
+    if hasattr(torch, 'amp'):
+        torch.autocast('cuda')
+    else:
+        torch.cuda.amp.autocast()
 
     try:
-        # 开始训练
         train.run(**args)
-
-        # 训练完成后处理日志
         convert_log_to_csv()
-
     except Exception as e:
-        LOGGER.error(f"{colorstr('red', 'bold', 'Training failed:')}")
-        LOGGER.error(e)
+        LOGGER.error(f"{colorstr('red', 'Training failed:')} {e}")
         raise
 
 def convert_log_to_csv():
-    """将训练日志转换为CSV格式"""
     try:
         log_dir = Path('runs/train/v5s')
         log_file = next(log_dir.glob('*_train.log'), None)
 
-        if log_file and log_file[0].exists():
-            csv_file = log_file[0].with_suffix('.csv')
-
-            # 读取日志并转换格式
-            with open(log_file[0], 'r') as f_in:
-                lines = [line.strip().split() for line in f_in if line.strip()]
-
-            # 写入CSV
-            with open(csv_file, 'w') as f_out:
-                for line in lines:
-                    f_out.write(','.join(line) + '\n')
-
-            print(colorstr('green', f'\nLog converted to: {csv_file}'))
-        else:
-            print(colorstr('yellow', 'No training log file found!'))
-
+        if log_file and log_file.exists():
+            csv_file = log_file.with_suffix('.csv')
+            with open(log_file, 'r') as f_in, open(csv_file, 'w') as f_out:
+                for line in f_in:
+                    if line.strip():
+                        f_out.write(','.join(line.split()) + '\n')
+            LOGGER.info(colorstr('green', f'Log converted to: {csv_file}'))
     except Exception as e:
-        LOGGER.warning(f"{colorstr('yellow', 'Log conversion failed:')}")
-        LOGGER.warning(e)
+        LOGGER.warning(f"Log conversion failed: {e}")
 
 if __name__ == '__main__':
-    # 检查CUDA可用性
+    # 检查CUDA
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is not available!")
+        raise RuntimeError("CUDA not available!")
 
-    # 设置PyTorch自动混合精度（兼容新旧版本）
-    if hasattr(torch, 'amp'):
-        torch.autocast('cuda')  # PyTorch 2.0+
-    else:
-        torch.cuda.amp.autocast()  # 旧版本兼容
+    # 设置更安全的线程数
+    torch.set_num_threads(4)
 
     train_model()
