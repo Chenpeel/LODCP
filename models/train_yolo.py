@@ -6,6 +6,7 @@ from yolov5.utils.general import colorstr, LOGGER
 from yolov5.utils.downloads import attempt_download
 from pathlib import Path
 from PIL import ImageFont
+import yaml
 
 # 修复 ImageFont.getsize 问题
 try:
@@ -51,6 +52,16 @@ def train_model():
     # 检查数据配置
     if not os.path.exists(args['data']):
         raise FileNotFoundError(f"Data config {args['data']} not found!")
+
+    # 加载数据配置
+    with open(args['data'], 'r') as f:
+        data_config = yaml.safe_load(f)
+
+    # 验证数据配置
+    required_fields = ['train', 'val', 'nc', 'names', 'augmentation']
+    for field in required_fields:
+        if field not in data_config:
+            raise ValueError(f"Field required [type=missing, input_value={data_config}, input_type=dict]")
 
     LOGGER.info(colorstr('blue', 'bold', '\nTraining parameters:'))
     for k, v in args.items():

@@ -1,9 +1,8 @@
 import os
 import json
-import pandas as pd
-from tqdm import tqdm
 import shutil
 import yaml
+from tqdm import tqdm
 
 def convert_bdd100k_to_yolo(bdd_dir, output_dir):
     # 创建输出目录结构
@@ -26,7 +25,7 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
 
     for ann in tqdm(train_anns):
         img_name = ann["name"]
-        img_src = os.path.join(bdd_dir, "bdd100k", "bdd100k", "images", "100k", "train", img_name)
+        img_src = os.path.join(bdd_dir, "images", "100k", "train", img_name)
         img_dst = os.path.join(output_dir, "images", "train", img_name)
         label_file = os.path.join(output_dir, "labels", "train", img_name.replace(".jpg", ".txt"))
 
@@ -72,7 +71,7 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
 
     for ann in tqdm(val_anns):
         img_name = ann["name"]
-        img_src = os.path.join(bdd_dir, "bdd100k", "bdd100k", "images", "100k", "val", img_name)
+        img_src = os.path.join(bdd_dir, "images", "100k", "val", img_name)
         img_dst = os.path.join(output_dir, "images", "val", img_name)
         label_file = os.path.join(output_dir, "labels", "val", img_name.replace(".jpg", ".txt"))
 
@@ -111,6 +110,7 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
         'path': os.path.abspath(output_dir),
         'train': 'images/train',
         'val': 'images/val',
+        'nc': len(category_map),
         'names': list(category_map.keys())
     }
 
