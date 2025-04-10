@@ -9,18 +9,36 @@ import datetime
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 import gc
+import csv
 
 def train_fast_scnn():
     # 准备工作目录
     workdir = os.path.dirname(os.path.abspath(__file__))
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(workdir, "logs", f"fastscnn_{timestamp}")
-    models_dir = os.path.join(workdir, "saved_models")  # 修改为更清晰的目录名
-    os.makedirs(log_dir, exist_ok=True)
-    os.makedirs(models_dir, exist_ok=True)
+    save_dir = os.path.join(workdir, "saved", f"fastscnn_{timestamp}")  # 统一保存目录
 
-    # 准备数据 - 减少num_workers并添加persistent_workers
+    # 创建所有子目录
+    os.makedirs(os.path.join(save_dir, "models"), exist_ok=True)    # 模型保存目录
+    os.makedirs(os.path.join(save_dir, "logs"), exist_ok=True)      # 日志保存目录
+
+    # 初始化TensorBoard和CSV记录器
+    writer = SummaryWriter(log_dir=os.path.join(save_dir, "logs"))
+    csv_path = os.path.join(save_dir, "logs", "training_log.csv")
+
+    # 初始化CSV文件并写入表头
+    with open(csv_path, 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow([
+            'epoch',
+            'train_loss',
+            'val_loss',
+            'learning_rate',
+            'timestamp'
+        ])
+
+    # 准备数据
     print("准备数据集...")
     train_set, val_set = prepare_datasets()
     train_loader = DataLoader(
@@ -48,12 +66,16 @@ def train_fast_scnn():
     criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 3.0], device=device))
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    # 训练循环 - 添加资源清理
+    # 初始化最佳验证损失
+    best_val_loss = float('inf')
+
+    # 训练循环
     for epoch in range(50):
         model.train()
         train_loss = 0.0
+        current_lr = optimizer.param_groups[0]['lr']
 
-        # 添加资源清理和错误处理
+        # 训练阶段
         try:
             with tqdm(train_loader, desc=f'Epoch {epoch+1}/50 [训练]') as train_pbar:
                 for images, masks in train_pbar:
@@ -93,10 +115,34 @@ def train_fast_scnn():
                 torch.cuda.empty_cache()
             continue
 
+        # 计算平均损失
         avg_train_loss = train_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
 
-        print(f"Epoch {epoch+1}/50 - Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
+        # 记录到TensorBoard
+        writer.add_scalar('Loss/train', avg_train_loss, epoch)
+        writer.add_scalar('Loss/val', avg_val_loss, epoch)
+        writer.add_scalar('LearningRate', current_lr, epoch)
+
+        # 记录到CSV
+        with open(csv_path, 'a', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow([
+                epoch+1,
+                avg_train_loss,
+                avg_val_loss,
+                current_lr,
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ])
+
+        print(f"Epoch {epoch+1}/50 - Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, LR: {current_lr:.6f}")
+
+        # 保存最佳模型
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_model_path = os.path.join(save_dir, "models", f"best_model_epoch{epoch+1}.pth")
+            torch.save(model.state_dict(), best_model_path)
+            print(f"新的最佳模型保存到 {best_model_path}")
 
         # 定期清理资源
         if (epoch + 1) % 5 == 0:
@@ -104,10 +150,13 @@ def train_fast_scnn():
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-    # 保存模型
-    model_path = os.path.join(models_dir, "fast-scnn.pth")
-    torch.save(model.state_dict(), model_path)
-    print(f"训练完成，模型保存到 {model_path}")
+    # 训练结束后保存最终模型
+    final_model_path = os.path.join(save_dir, "models", "final_model.pth")
+    torch.save(model.state_dict(), final_model_path)
+    print(f"训练完成，最终模型保存到 {final_model_path}")
+
+    # 关闭TensorBoard writer
+    writer.close()
 
 if __name__ == "__main__":
     # 设置文件描述符限制 (Mac/Linux)
