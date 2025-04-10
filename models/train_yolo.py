@@ -7,6 +7,7 @@ from yolov5.utils.downloads import attempt_download
 from pathlib import Path
 from PIL import ImageFont
 
+# 修复 ImageFont.getsize 问题
 try:
     ImageFont.getsize
 except AttributeError:
@@ -57,12 +58,13 @@ def train_model():
 
     # 使用新版autocast API
     if hasattr(torch, 'amp'):
-        torch.autocast('cuda')
+        autocast = torch.amp.autocast
     else:
-        torch.cuda.amp.autocast()
+        autocast = torch.cuda.amp.autocast
 
     try:
-        train.run(**args)
+        with autocast('cuda'):
+            train.run(**args)
         convert_log_to_csv()
     except Exception as e:
         LOGGER.error(f"{colorstr('red', 'Training failed:')} {e}")
