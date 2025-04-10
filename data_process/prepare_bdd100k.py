@@ -111,7 +111,7 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
         'path': os.path.abspath(output_dir),
         'train': 'images/train',
         'val': 'images/val',
-        'nc': len(category_map),  # 添加类别数量字段
+        'nc': len(category_map),
         'names': list(category_map.keys())
     }
 

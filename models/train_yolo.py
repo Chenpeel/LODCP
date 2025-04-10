@@ -5,21 +5,11 @@ from yolov5 import train
 from yolov5.utils.general import colorstr, LOGGER
 from yolov5.utils.downloads import attempt_download
 from pathlib import Path
-from PIL import ImageFont
 import yaml
 
-# 修复 ImageFont.getsize 问题
-try:
-    ImageFont.getsize
-except AttributeError:
-    def _getsize(font, text):
-        left, top, right, bottom = font.getbbox(text)
-        return right - left, bottom - top
-    ImageFont.getsize = _getsize
-
-# 配置环境
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 warnings.filterwarnings("ignore", category=UserWarning)  # 忽略所有用户警告
+
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
 def train_model():
     args = {
@@ -61,10 +51,8 @@ def train_model():
     for k, v in args.items():
         LOGGER.info(f"{k}: {colorstr('white', str(v))}")
 
-    # 使用新的 autocast 调用方式
     try:
-        with torch.amp.autocast('cuda'):
-            train.run(**args)
+        train.run(**args)
         convert_log_to_csv()
     except Exception as e:
         LOGGER.error(f"{colorstr('red', 'Training failed:')} {e}")

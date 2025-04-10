@@ -12,16 +12,7 @@ pip install -r requirements.txt
 
 python3 data_process/getdataset.py
 
-python3 data_process/prepare.py
+python3 data_process/prepare_bdd100k.py
 
-yolo train \
-    data=data/bdd100k-yolo/bdd100k.yaml \
-    model=yolov5s.pt \
-    epochs=50 \
-    imgsz=640 \
-    batch=16 \
-    device=0 \
-    workers=6 \
-    project=runs/train \
-    name=bdd100k_yolov5s
+yolo train model=yolov5s.pt data=data/bdd100k-yolo/bdd100k.yaml epochs=400 batch=160 imgsz=640 device=0 workers=8 project=runs/train name=v5s exist_ok=True optimizer=SGD lr0=0.01 momentum=0.873 weight_decay=0.0005 cos_lr=True lrf=0.001 rect=True augment=True save_period=1
 ```
