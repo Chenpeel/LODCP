@@ -15,9 +15,9 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
 
     # BDD100K类别映射到YOLO
     category_map = {
-        "pedestrian": 0, "rider": 1, "car": 2, "truck": 3,
-        "bus": 4, "train": 5, "motorcycle": 6, "bicycle": 7,
-        "traffic light": 8, "traffic sign": 9
+        "pedestrian": 0, "rider": 0,  # 行人类
+        "car": 1, "truck": 1, "bus": 1, "train": 1, "motorcycle": 1, "bicycle": 1,  # 车辆类
+        "traffic light": 2, "traffic sign": 2  # 交通信号类
     }
 
     # 处理训练集
@@ -122,8 +122,8 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
         'path': os.path.abspath(output_dir),
         'train': 'images/train',
         'val': 'images/val',
-        'nc': len(category_map),
-        'names': list(category_map.keys())
+        'nc': 3,  # 类别数量
+        'names': ['pedestrian', 'vehicle', 'traffic signal']  # 类别名称
     }
 
     with open(os.path.join(output_dir, "bdd100k.yaml"), "w") as f:
@@ -132,5 +132,5 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
     print(f"Dataset conversion complete. YOLO format dataset saved to {output_dir}")
 
 if __name__ == "__main__":
-    data_fraction = 0.5
+    data_fraction = 0.2
     convert_bdd100k_to_yolo("data/bdd100k-dataset", "data/bdd100k-yolo", data_fraction=data_fraction)
