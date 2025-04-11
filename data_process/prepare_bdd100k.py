@@ -4,8 +4,9 @@ import pandas as pd
 from tqdm import tqdm
 import shutil
 import yaml
+import random
 
-def convert_bdd100k_to_yolo(bdd_dir, output_dir):
+def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
     # 创建输出目录结构
     os.makedirs(os.path.join(output_dir, "images", "train"), exist_ok=True)
     os.makedirs(os.path.join(output_dir, "images", "val"), exist_ok=True)
@@ -23,6 +24,11 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
     print("Processing training set...")
     with open(os.path.join(bdd_dir, "labels", "det_v2_train_release.json")) as f:
         train_anns = json.load(f)
+
+    # 按比例抽样
+    if data_fraction < 1.0:
+        train_anns = random.sample(train_anns, int(len(train_anns) * data_fraction))
+        print(f"Sampled {len(train_anns)} training annotations")
 
     for ann in tqdm(train_anns):
         img_name = ann["name"]
@@ -69,6 +75,11 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
     print("Processing validation set...")
     with open(os.path.join(bdd_dir, "labels", "det_v2_val_release.json")) as f:
         val_anns = json.load(f)
+
+    # 按比例抽样
+    if data_fraction < 1.0:
+        val_anns = random.sample(val_anns, int(len(val_anns) * data_fraction))
+        print(f"Sampled {len(val_anns)} validation annotations")
 
     for ann in tqdm(val_anns):
         img_name = ann["name"]
@@ -121,4 +132,5 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir):
     print(f"Dataset conversion complete. YOLO format dataset saved to {output_dir}")
 
 if __name__ == "__main__":
-    convert_bdd100k_to_yolo("data/bdd100k-dataset", "data/bdd100k-yolo")
+    data_fraction = 0.5
+    convert_bdd100k_to_yolo("data/bdd100k-dataset", "data/bdd100k-yolo", data_fraction=data_fraction)
