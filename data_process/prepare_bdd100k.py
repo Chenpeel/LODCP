@@ -125,7 +125,8 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
         'names': ['active', 'traffic signal'],
         'cos_lr': True,
         'rect': True,
-        'argment': True
+        'argment': True,
+        'hyp': 'models/hyp.yml'
     }
 
     with open(os.path.join(output_dir, "bdd100k.yaml"), "w") as f:
