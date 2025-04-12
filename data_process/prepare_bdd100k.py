@@ -122,8 +122,20 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
         'path': os.path.abspath(output_dir),
         'train': 'images/train',
         'val': 'images/val',
-        'nc': 3,  # 类别数量
-        'names': ['pedestrian', 'vehicle', 'traffic signal']  # 类别名称
+        'nc': 3,
+        'names': ['pedestrian', 'vehicle', 'traffic signal'],
+        'hsv_h': 0.015,
+        'hsv_s': 0.7,
+        'hsv_v': 0.4,
+        'degrees': 0.0,
+        'translate': 0.1,
+        'scale': 0.5,
+        'shear': 0.0,
+        'perspective': 0.0,
+        'flipud': 0.0,
+        'fliplr': 0.5,
+        'mosaic': 1.0,
+        'mixup': 0.0
     }
 
     with open(os.path.join(output_dir, "bdd100k.yaml"), "w") as f:
