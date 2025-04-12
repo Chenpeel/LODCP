@@ -1,0 +1,28 @@
+lr0: 0.001
+lrf: 0.00005
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3
+warmup_momentum: 0.91
+warmup_bias_lr: 0.1
+
+# 数据增强参数
+hsv_h: 0.015 # 色调增强
+hsv_s: 0.7 # 饱和度增强
+hsv_v: 0.4 # 亮度增强
+degrees: 0.0 # 旋转角度
+translate: 0.1 # 平移
+scale: 0.5 # 缩放
+shear: 0.0 # 剪切
+perspective: 0.0 # 透视变换
+flipud: 0.0 # 上下翻转概率
+fliplr: 0.5 # 左右翻转概率
+mosaic: 1.0 # Mosaic 增强概率
+mixup: 0.0 # MixUp 增强概率
+
+# 损失函数参数
+box: 7.5 # 框回归损失权重
+cls: 0.5 # 分类损失权重
+obj: 1.0 # 目标置信度损失权重
+iou: 0.05 # IoU 损失权重
+iou_loss: ciou # IoU 损失类型 (giou/diou/ciou)

@@ -15,9 +15,8 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
 
     # BDD100K类别映射到YOLO
     category_map = {
-        "pedestrian": 0, "rider": 0,  # 行人类
-        "car": 1, "truck": 1, "bus": 1, "train": 1, "motorcycle": 1, "bicycle": 1,  # 车辆类
-        "traffic light": 2, "traffic sign": 2  # 交通信号类
+        "pedestrian": 0, "rider": 0, "car": 0, "truck": 0, "bus": 0, "train": 0, "motorcycle": 0, "bicycle": 0,
+        "traffic light": 1, "traffic sign": 1
     }
 
     # 处理训练集
@@ -122,20 +121,11 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
         'path': os.path.abspath(output_dir),
         'train': 'images/train',
         'val': 'images/val',
-        'nc': 3,
-        'names': ['pedestrian', 'vehicle', 'traffic signal'],
-        'hsv_h': 0.015,
-        'hsv_s': 0.7,
-        'hsv_v': 0.4,
-        'degrees': 0.0,
-        'translate': 0.1,
-        'scale': 0.5,
-        'shear': 0.0,
-        'perspective': 0.0,
-        'flipud': 0.0,
-        'fliplr': 0.5,
-        'mosaic': 1.0,
-        'mixup': 0.0
+        'nc': 2,
+        'names': ['active', 'traffic signal'],
+        'cos_lr': True,
+        'rect': True,
+        'argment': True
     }
 
     with open(os.path.join(output_dir, "bdd100k.yaml"), "w") as f:
