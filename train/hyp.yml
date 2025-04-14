@@ -1,0 +1,37 @@
+# yolov5su 超参数设置
+
+lr0: 0.01 # 初始学习率增大（EIoU需要）
+lrf: 0.002 # 最终学习率 (lr0 * lrf)
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3
+warmup_momentum: 0.8 # 更低的热身动量（稳定EIoU训练）
+warmup_bias_lr: 0.1
+
+# 数据增强 (轻量化适配ESP32)
+hsv_h: 0.01 # 降低色调扰动（减少颜色敏感度）
+hsv_s: 0.5 # 降低饱和度扰动
+hsv_v: 0.3 # 降低亮度扰动
+degrees: 5.0 # 小幅旋转（ESP32对旋转目标泛化弱）
+translate: 0.05 # 减小平移幅度
+scale: 0.3 # 缩小缩放范围
+shear: 0.0 # 禁用剪切（避免形变目标）
+perspective: 0.0 # 禁用透视变换
+flipud: 0.0 # 禁用上下翻转
+fliplr: 0.3 # 降低左右翻转概率
+mosaic: 0.5 # 降低Mosaic概率（减少计算负载）
+mixup: 0.0 # 禁用MixUp（简化后处理）
+
+# 损失函数 (EIoU优化核心参数)
+box: 5.0 # 降低框回归权重（EIoU本身更强）
+cls: 0.8 # 提高分类权重（ESP32需更高置信度）
+obj: 1.0 # 降低目标置信度权重
+fl_gamma: 1.5 # Focal Loss gamma
+anchor_t: 4.0 # 提高正样本阈值（适配EIoU的严格匹配）
+iou: 0.7 # IoU损失权重
+iou_loss: eiou # 使用EIoU损失
+gradient_clip_val: 1.0 # 梯度裁剪
+
+# EIoU专属参数 (自定义添加)
+eiou_alpha: 0.25 # EIoU的alpha参数（平衡中心点/长宽比损失）
+eiou_ratio: 0.7 # EIoU中长宽比损失占比
