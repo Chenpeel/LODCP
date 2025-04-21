@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import torch.nn as nn
 import torch.nn.utils.prune as prune
 from pathlib import Path
 
@@ -26,118 +27,162 @@ def print_sparsity(model):
     sparsity = zero_params / total_params if total_params > 0 else 0
     print(f"全局稀疏度: {sparsity:.2%} (零值参数 {zero_params}/{total_params})")
 
-def analyze_mismatch(model, state_dict):
-    """分析不匹配的参数"""
-    model_keys = set(model.state_dict().keys())
-    ckpt_keys = set(state_dict.keys())
-    print("\n详细参数分析:")
-    print(f"仅在模型中的参数({len(model_keys - ckpt_keys)}): {sorted(model_keys - ckpt_keys)[:3] + ['...']}")
-    print(f"仅在检查点中的参数({len(ckpt_keys - model_keys)}): {sorted(ckpt_keys - model_keys)[:3] + ['...']}")
-
-def load_model_with_matching_keys(model, state_dict):
-    """只加载匹配的权重参数"""
-    model_state_dict = model.state_dict()
-    matched_keys = []
-    shape_mismatch = []
-
-    for k, v in state_dict.items():
-        if k in model_state_dict:
-            if v.shape == model_state_dict[k].shape:
-                model_state_dict[k] = v
-                matched_keys.append(k)
-            else:
-                shape_mismatch.append((k, v.shape, model_state_dict[k].shape))
-
-    analyze_mismatch(model, state_dict)
-
-    if shape_mismatch:
-        print("\n形状不匹配的参数:")
-        for k, ckpt_shape, model_shape in shape_mismatch[:3]:
-            print(f"{k}: 检查点{ckpt_shape} ≠ 模型{model_shape}")
-        if len(shape_mismatch) > 3:
-            print(f"...还有{len(shape_mismatch)-3}个")
-
-    model.load_state_dict(model_state_dict, strict=False)
-    print(f"\n权重加载结果:")
-    print(f"✅ 成功加载 {len(matched_keys)}/{len(model_state_dict)} 参数")
-    return model
-
-def global_prune_model(model, amount=0.3):
-    """执行全局剪枝"""
-    parameters_to_prune = [
-        (module, 'weight')
-        for module in model.modules()
-        if isinstance(module, torch.nn.Conv2d)
+def safe_prune(model, amount=0.3):
+    """
+    保护性剪枝函数
+    不剪枝的关键层：
+    - 前3层卷积（浅层特征提取）
+    - Detect层（模型头部）
+    - 特征金字塔关键层
+    """
+    # 不剪枝的关键层列表
+    EXCLUDE_LAYERS = [
+        'model.0', 'model.1', 'model.2',  # 前3层卷积
+        'model.24',                       # Detect层
+        'model.10', 'model.14', 'model.17' # 特征金字塔关键层
     ]
 
-    print(f"\n正在对 {len(parameters_to_prune)} 个卷积层执行全局剪枝 ({amount*100:.0f}%)...")
+    params_to_prune = []
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Conv2d):
+            if not any(exclude in name for exclude in EXCLUDE_LAYERS):
+                params_to_prune.append((module, 'weight'))
+
+    print(f"\n将对 {len(params_to_prune)} 个卷积层执行剪枝（排除 {len(EXCLUDE_LAYERS)} 个关键层）")
+
+    # 执行全局剪枝
     prune.global_unstructured(
-        parameters_to_prune,
+        params_to_prune,
         pruning_method=prune.L1Unstructured,
         amount=amount
     )
 
-    for module, _ in parameters_to_prune:
+    # 使剪枝永久化并确保梯度可计算
+    for module, _ in params_to_prune:
         prune.remove(module, 'weight')
+        module.weight.requires_grad = True
 
     return model
 
-def verify_pruning(model, target_sparsity=0.3, tolerance=0.05):
-    """验证剪枝效果"""
-    total = sum(p.numel() for p in model.parameters())
-    zeros = sum(count_zeros(p) for p in model.parameters())
-    actual_sparsity = zeros / total
-    print(f"\n剪枝验证: 目标{target_sparsity:.0%} 实际{actual_sparsity:.2%}")
-    if abs(actual_sparsity - target_sparsity) >= tolerance:
-        print(f"警告: 实际稀疏度与目标相差超过{tolerance:.0%}")
+def load_model_with_matching_keys(model, state_dict):
+    """改进的权重加载函数，自动处理部分不兼容参数"""
+    model_sd = model.state_dict()
+
+    # 参数名映射（处理部分不兼容情况）
+    param_mapping = {
+        'model.24.cv2.0.0.conv.weight': 'model.24.m.0.weight',
+        'model.24.cv2.1.0.conv.weight': 'model.24.m.1.weight',
+        'model.24.cv2.2.0.conv.weight': 'model.24.m.2.weight'
+    }
+
+    matched, missing = 0, 0
+    for k, v in model_sd.items():
+        # 尝试原始键名
+        if k in state_dict and state_dict[k].shape == v.shape:
+            model_sd[k] = state_dict[k]
+            matched += 1
+        # 尝试映射键名
+        elif any(src in k for src in param_mapping):
+            mapped_key = next((src for src in param_mapping if src in k), None)
+            if mapped_key and mapped_key in state_dict:
+                model_sd[k] = state_dict[mapped_key]
+                matched += 1
+                print(f"参数映射: {mapped_key} -> {k}")
+        else:
+            missing += 1
+
+    model.load_state_dict(model_sd, strict=False)
+    print(f"\n权重加载: 成功匹配 {matched}/{len(model_sd)} 参数")
+    if missing > 0:
+        print(f"警告: {missing} 个参数未加载（使用初始化值）")
+
+    return model
+
+def verify_model(model, verbose=False):
+    """全面验证模型状态"""
+    print("\n" + "="*50)
+    print("模型验证报告")
+    print("="*50)
+
+    # 1. 检查梯度状态
+    requires_grad = sum(p.requires_grad for p in model.parameters())
+    print(f"可训练参数: {requires_grad}/{sum(1 for _ in model.parameters())}")
+
+    # 2. 检查Detect层完整性
+    detect_layer = model.model[-1]
+    print("\nDetect层状态:")
+    print(f"Anchors: {detect_layer.anchors.shape if hasattr(detect_layer, 'anchors') else 'Missing'}")
+    print(f"检测头数量: {len(detect_layer.m) if hasattr(detect_layer, 'm') else 0}")
+
+    # 3. 详细稀疏度分析
+    if verbose:
+        print("\n各层稀疏度:")
+        for name, param in model.named_parameters():
+            if 'weight' in name and param.dim() > 1:
+                sparsity = (param == 0).float().mean().item()
+                print(f"{name:50} {sparsity:.1%}")
 
 def main():
-    # 初始化模型
+    # 1. 初始化模型
     print("初始化模型...")
     model = Model(YOLOv5_ROOT / "models/yolov5s.yaml")
     print(f"原始模型参数量: {sum(p.numel() for p in model.parameters()):,}")
     print_sparsity(model)
 
-    # 加载权重
+    # 2. 加载权重
     weights_path = PROJECT_ROOT / "models/yolov5su/weights/best.pt"
-    print(f"\n正在加载权重: {weights_path}")
+    print(f"\n加载权重: {weights_path}")
 
     try:
         ckpt = torch.load(weights_path, map_location='cpu')
         print(f"模型版本: {ckpt.get('version', '未知')}")
-        print(f"训练使用的YOLOv5版本: {ckpt.get('yolov5_version', '未知')}")
         model = load_model_with_matching_keys(model, ckpt['model'].float().state_dict())
     except Exception as e:
-        print(f"❌ 加载权重失败: {e}")
+        print(f"❌ 加载失败: {e}")
         return
 
-    # 剪枝操作
-    print("\n剪枝前状态:")
-    print_sparsity(model)
+    # 3. 剪枝前验证
+    print("\n剪枝前验证:")
+    verify_model(model, verbose=True)
 
-    model = global_prune_model(model, amount=0.3)
-    verify_pruning(model)
+    # 4. 执行保护性剪枝
+    print("\n执行保护性剪枝...")
+    model = safe_prune(model, amount=0.3)
 
-    print("\n剪枝后状态:")
+    # 5. 剪枝后验证
+    print("\n剪枝后验证:")
+    verify_model(model, verbose=True)
+
     total_params = sum(p.numel() for p in model.parameters())
     zero_params = sum(count_zeros(p) for p in model.parameters())
-    print(f"总参数量: {total_params:,}")
+    print(f"\n总参数量: {total_params:,}")
     print(f"零值参数: {zero_params:,}")
-    print(f"非零参数: {total_params - zero_params:,}")
+    print(f"有效参数: {total_params - zero_params:,}")
+    print(f"实际剪枝率: {zero_params/total_params:.1%}")
 
-    # 保存模型
-    output_path = PROJECT_ROOT / "pruned_model.pt"
+    # 6. 保存模型（兼容格式）
+    output_path = PROJECT_ROOT / "pruned_model_protected.pt"
     torch.save({
         'model': model.state_dict(),
+        'stride': int(model.stride.max()),
+        'names': model.names,
+        'anchors': model.model[-1].anchors if hasattr(model.model[-1], 'anchors') else None,
         'prune_info': {
-            'method': 'global_unstructured',
+            'method': 'protected_global',
             'amount': 0.3,
-            'zero_params': zero_params,
-            'total_params': total_params,
-            'sparsity': zero_params / total_params
+            'excluded_layers': ['model.0-2', 'model.10/14/17', 'model.24']
         }
     }, output_path)
-    print(f"\n✅ 模型已保存至 {output_path}")
+    print(f"\n✅ 剪枝模型已保存: {output_path}")
+
+    # 7. 转换为可部署格式
+    deploy_path = PROJECT_ROOT / "pruned_model_compatible.pt"
+    torch.save({
+        'model': model,
+        'stride': int(model.stride.max()),
+        'names': model.names
+    }, deploy_path)
+    print(f"✅ 部署格式已保存: {deploy_path}")
 
 if __name__ == "__main__":
     main()
