@@ -205,7 +205,7 @@ def create_pruned_yaml(original_yaml="models/yolov5s.yaml",
     import yaml
     import json
 
-    # 加载通道信息
+    # 加载通道信息（添加默认值处理）
     with open(channel_file) as f:
         channels = json.load(f)
 
@@ -213,29 +213,50 @@ def create_pruned_yaml(original_yaml="models/yolov5s.yaml",
     with open(original_yaml) as f:
         cfg = yaml.safe_load(f)
 
-    # 更新Backbone和Head
+    # 通道映射表（原始->剪枝后）
+    channel_map = {
+        # Backbone
+        32: channels.get("model.0", 17),
+        64: channels.get("model.1", 34),
+        128: channels.get("model.3", 67),
+        256: channels.get("model.5", 134),
+        512: channels.get("model.7", 267),
+        1024: channels.get("model.7", 267)*2,  # SPPF输入
+
+        # Head
+        512: channels.get("model.10", 134),
+        256: channels.get("model.14", 67),
+    }
+
+    # 更新所有层的通道数
     for section in ['backbone', 'head']:
         for i, layer in enumerate(cfg[section]):
-            module_type = layer[2]  # 模块类型 (Conv/C3/SPPF等)
-            args = layer[-1] if isinstance(layer[-1], list) else []
+            args = layer[-1]
+            if not isinstance(args, list):
+                continue
 
-            # 只处理需要修改通道数的模块
-            if module_type == 'Conv':
-                # 确保参数格式正确 [out_c, k, s, p, g]
-                if len(args) >= 2 and args[1] in [32, 64, 128, 256, 512]:
-                    module_name = f"model.{layer[0]}" if section == 'backbone' else f"model.{i+len(cfg['backbone'])}"
-                    if module_name in channels:
-                        args[1] = channels[module_name]
+            # 处理Conv层
+            if layer[2] == 'Conv' and len(args) >= 2:
+                if args[1] in channel_map:
+                    args[1] = channel_map[args[1]]
 
-            # 处理C3模块的输出通道
-            elif module_type == 'C3' and len(args) >= 1:
-                module_name = f"model.{layer[0]}.cv2.conv" if section == 'backbone' else f"model.{i+len(cfg['backbone'])}.cv2.conv"
-                if module_name in channels:
-                    args[0] = channels[module_name]
+            # 处理C3层
+            elif layer[2] == 'C3' and len(args) >= 1:
+                if args[0] in channel_map:
+                    args[0] = channel_map[args[0]]
+
+            # 处理Detect层的anchors
+            elif layer[2] == 'Detect':
+                # 更新anchor对应的通道数
+                args[-1] = [
+                    channels.get("model.24.m.0", 133),
+                    channels.get("model.24.m.1", 133),
+                    channels.get("model.24.m.2", 133)
+                ]
 
     # 保存新配置
     with open(output_yaml, 'w') as f:
-        yaml.dump(cfg, f, sort_keys=False)
+        yaml.dump(cfg, f, sort_keys=False, default_flow_style=None)
 
     print(f"剪枝配置文件已生成: {output_yaml}")
 
