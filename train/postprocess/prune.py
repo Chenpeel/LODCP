@@ -27,37 +27,58 @@ def print_sparsity(model):
     sparsity = zero_params / total_params if total_params > 0 else 0
     print(f"全局稀疏度: {sparsity:.2%} (零值参数 {zero_params}/{total_params})")
 
-def safe_prune(model, amount=0.3):
+def aggressive_prune(model, target_sparsity=0.48):
     """
-    保护性剪枝函数
-    不剪枝的关键层：
-    - 前3层卷积（浅层特征提取）
-    - Detect层（模型头部）
-    - 特征金字塔关键层
+    - 浅层(前3层): 20%剪枝
+    - 中间层: 50%剪枝
+    - 特征金字塔层: 30%剪枝
+    - 输出层: 20%剪枝
     """
-    # 不剪枝的关键层列表
-    EXCLUDE_LAYERS = [
-        'model.0', 'model.1', 'model.2',  # 前3层卷积
-        'model.24',                       # Detect层
-        'model.10', 'model.14', 'model.17' # 特征金字塔关键层
-    ]
+    # 定义分层剪枝策略
+    PRUNE_POLICY = {
+        'model.0': 0.2,   # 浅层卷积
+        'model.1': 0.2,
+        'model.2': 0.2,
+        'model.3': 0.5,   # 中间层
+        'model.4': 0.5,
+        'model.5': 0.5,
+        'model.6': 0.5,
+        'model.7': 0.5,
+        'model.8': 0.5,
+        'model.9': 0.5,
+        'model.10': 0.3,  # 特征金字塔
+        'model.13': 0.3,
+        'model.14': 0.3,
+        'model.17': 0.3,
+        'model.18': 0.3,
+        'model.20': 0.3,
+        'model.21': 0.3,
+        'model.23': 0.3,
+        'model.24': 0.2   # 输出层
+    }
 
     params_to_prune = []
     for name, module in model.named_modules():
         if isinstance(module, nn.Conv2d):
-            if not any(exclude in name for exclude in EXCLUDE_LAYERS):
-                params_to_prune.append((module, 'weight'))
+            # 查找匹配的剪枝策略
+            prune_amount = 0
+            for layer_prefix, amount in PRUNE_POLICY.items():
+                if name.startswith(layer_prefix):
+                    prune_amount = amount
+                    break
 
-    print(f"\n将对 {len(params_to_prune)} 个卷积层执行剪枝（排除 {len(EXCLUDE_LAYERS)} 个关键层）")
+            if prune_amount > 0:
+                params_to_prune.append((module, 'weight'))
+                print(f"计划剪枝 {name}: 目标剪枝率 {prune_amount:.0%}")
 
     # 执行全局剪枝
     prune.global_unstructured(
         params_to_prune,
         pruning_method=prune.L1Unstructured,
-        amount=amount
+        amount=target_sparsity
     )
 
-    # 使剪枝永久化并确保梯度可计算
+    # 使剪枝永久化
     for module, _ in params_to_prune:
         prune.remove(module, 'weight')
         module.weight.requires_grad = True
@@ -65,29 +86,14 @@ def safe_prune(model, amount=0.3):
     return model
 
 def load_model_with_matching_keys(model, state_dict):
-    """改进的权重加载函数，自动处理部分不兼容参数"""
+    """改进的权重加载函数"""
     model_sd = model.state_dict()
-
-    # 参数名映射（处理部分不兼容情况）
-    param_mapping = {
-        'model.24.cv2.0.0.conv.weight': 'model.24.m.0.weight',
-        'model.24.cv2.1.0.conv.weight': 'model.24.m.1.weight',
-        'model.24.cv2.2.0.conv.weight': 'model.24.m.2.weight'
-    }
-
     matched, missing = 0, 0
+
     for k, v in model_sd.items():
-        # 尝试原始键名
         if k in state_dict and state_dict[k].shape == v.shape:
             model_sd[k] = state_dict[k]
             matched += 1
-        # 尝试映射键名
-        elif any(src in k for src in param_mapping):
-            mapped_key = next((src for src in param_mapping if src in k), None)
-            if mapped_key and mapped_key in state_dict:
-                model_sd[k] = state_dict[mapped_key]
-                matched += 1
-                print(f"参数映射: {mapped_key} -> {k}")
         else:
             missing += 1
 
@@ -98,29 +104,15 @@ def load_model_with_matching_keys(model, state_dict):
 
     return model
 
-def verify_model(model, verbose=False):
-    """全面验证模型状态"""
-    print("\n" + "="*50)
-    print("模型验证报告")
-    print("="*50)
-
-    # 1. 检查梯度状态
+def verify_model(model):
+    """验证模型状态"""
+    print("\n模型验证:")
     requires_grad = sum(p.requires_grad for p in model.parameters())
     print(f"可训练参数: {requires_grad}/{sum(1 for _ in model.parameters())}")
 
-    # 2. 检查Detect层完整性
+    # 检查Detect层
     detect_layer = model.model[-1]
-    print("\nDetect层状态:")
-    print(f"Anchors: {detect_layer.anchors.shape if hasattr(detect_layer, 'anchors') else 'Missing'}")
     print(f"检测头数量: {len(detect_layer.m) if hasattr(detect_layer, 'm') else 0}")
-
-    # 3. 详细稀疏度分析
-    if verbose:
-        print("\n各层稀疏度:")
-        for name, param in model.named_parameters():
-            if 'weight' in name and param.dim() > 1:
-                sparsity = (param == 0).float().mean().item()
-                print(f"{name:50} {sparsity:.1%}")
 
 def main():
     # 1. 初始化模型
@@ -135,54 +127,54 @@ def main():
 
     try:
         ckpt = torch.load(weights_path, map_location='cpu')
-        print(f"模型版本: {ckpt.get('version', '未知')}")
         model = load_model_with_matching_keys(model, ckpt['model'].float().state_dict())
     except Exception as e:
         print(f"❌ 加载失败: {e}")
         return
 
-    # 3. 剪枝前验证
-    print("\n剪枝前验证:")
-    verify_model(model, verbose=True)
+    # 3. 执行激进的剪枝
+    print("\n执行激进剪枝(目标48%)...")
+    model = aggressive_prune(model, target_sparsity=0.48)
 
-    # 4. 执行保护性剪枝
-    print("\n执行保护性剪枝...")
-    model = safe_prune(model, amount=0.3)
+    # 4. 剪枝后验证
+    verify_model(model)
 
-    # 5. 剪枝后验证
-    print("\n剪枝后验证:")
-    verify_model(model, verbose=True)
-
+    # 5. 计算实际剪枝率
     total_params = sum(p.numel() for p in model.parameters())
     zero_params = sum(count_zeros(p) for p in model.parameters())
     print(f"\n总参数量: {total_params:,}")
     print(f"零值参数: {zero_params:,}")
     print(f"有效参数: {total_params - zero_params:,}")
-    print(f"实际剪枝率: {zero_params/total_params:.1%}")
+    actual_prune_rate = zero_params / total_params
+    print(f"实际剪枝率: {actual_prune_rate:.1%}")
 
-    # 6. 保存模型（兼容格式）
-    output_path = PROJECT_ROOT / "pruned_model_protected.pt"
+    # 如果未达到目标，进行补充剪枝
+    if actual_prune_rate < 0.48:
+        additional_prune = (0.48 - actual_prune_rate) / (1 - actual_prune_rate)
+        print(f"\n未达到目标剪枝率，进行补充剪枝 {additional_prune:.1%}...")
+        model = aggressive_prune(model, target_sparsity=additional_prune)
+
+        # 重新计算
+        total_params = sum(p.numel() for p in model.parameters())
+        zero_params = sum(count_zeros(p) for p in model.parameters())
+        print(f"最终剪枝率: {zero_params/total_params:.1%}")
+
+    # 6. 保存模型
+    output_path = PROJECT_ROOT / "pruned_model_48percent.pt"
     torch.save({
         'model': model.state_dict(),
         'stride': int(model.stride.max()),
         'names': model.names,
-        'anchors': model.model[-1].anchors if hasattr(model.model[-1], 'anchors') else None,
-        'prune_info': {
-            'method': 'protected_global',
-            'amount': 0.3,
-            'excluded_layers': ['model.0-2', 'model.10/14/17', 'model.24']
-        }
+        'prune_rate': zero_params / total_params
     }, output_path)
     print(f"\n✅ 剪枝模型已保存: {output_path}")
-
     # 7. 转换为可部署格式
-    deploy_path = PROJECT_ROOT / "pruned_model_compatible.pt"
+    deploy_path = PROJECT_ROOT / "pruned_model_48percent_deploy.pt"
     torch.save({
         'model': model,
         'stride': int(model.stride.max()),
         'names': model.names
     }, deploy_path)
     print(f"✅ 部署格式已保存: {deploy_path}")
-
 if __name__ == "__main__":
     main()
