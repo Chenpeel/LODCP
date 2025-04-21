@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 import numpy as np
 sys.path.append(str(Path(__file__).parent.parent))
-from data_process.data_std import *
-from models.fast_scnn import EnhancedFastSCNN
+from train.prepare.data_std import *
+from train.fast_scnn import EnhancedFastSCNN
 import torch.nn as nn
 import os
 import datetime
