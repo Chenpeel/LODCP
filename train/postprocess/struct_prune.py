@@ -16,16 +16,28 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from models.yolo import Model
 from models.common import Conv, C3
 
-model_path =f"{PROJECT_ROOT}/models/yolov5su/weights/best.pt"
-
+model_path = f"{PROJECT_ROOT}/models/yolov5su/weights/best.pt"
 
 def load_yolov5s_model(weights_path=None):
     """加载YOLOv5s模型"""
-    model = Model(cfg="models/yolov5s.yaml")  # 从配置文件创建模型
+    # 加载模型配置但不传递anchors参数
+    model = Model(cfg="models/yolov5s.yaml", ch=3, nc=2)  # 从配置文件创建模型
+
+    # 如果提供了权重路径，加载权重
     if weights_path:
         ckpt = torch.load(weights_path, map_location="cpu")  # 加载检查点
         csd = ckpt["model"].float().state_dict()  # 检查点状态字典
         model.load_state_dict(csd, strict=False)  # 加载
+
+    # 手动设置anchors
+    anchors = [
+        [10, 13, 16, 30, 33, 23],  # P3/8
+        [30, 61, 62, 45, 59, 119],  # P4/16
+        [116, 90, 156, 198, 373, 326]  # P5/32
+    ]
+    model.yaml["anchors"] = anchors  # 直接设置yaml中的anchors
+    model.nc = 2  # 类别数
+
     return model
 
 def get_channels_to_prune(module, amount=0.3):
@@ -180,88 +192,6 @@ def check_residual_connections(pruned_model):
             else:
                 print(f"✅ {name} 残差通道正常: {main_branch}")
 
-def export_pruned_channels(pruned_model, save_path="pruned_channels.txt"):
-    import json
-    from models.common import Conv
-
-    channel_info = {}
-
-    for name, module in pruned_model.named_modules():
-        if isinstance(module, nn.Conv2d):
-            # 标准Conv2d模块
-            channel_info[name] = module.out_channels
-        elif isinstance(module, Conv):
-            # YOLOv5的自定义Conv模块
-            channel_info[name] = module.conv.out_channels
-
-    # 保存到文件
-    with open(save_path, 'w') as f:
-        json.dump(channel_info, f, indent=2)
-
-    print(f"剪枝后通道数已保存到 {save_path}")
-def create_pruned_yaml(original_yaml="models/yolov5s.yaml",
-                        channel_file="pruned_channels.txt",
-                        output_yaml="models/yolov5s_pruned.yaml"):
-    import yaml
-    import json
-
-    # 加载通道信息（添加默认值处理）
-    with open(channel_file) as f:
-        channels = json.load(f)
-
-    # 加载原始配置
-    with open(original_yaml) as f:
-        cfg = yaml.safe_load(f)
-
-    # 通道映射表（原始->剪枝后）
-    channel_map = {
-        # Backbone
-        32: channels.get("model.0", 17),
-        64: channels.get("model.1", 34),
-        128: channels.get("model.3", 67),
-        256: channels.get("model.5", 134),
-        512: channels.get("model.7", 267),
-        1024: channels.get("model.7", 267)*2,  # SPPF输入
-
-        # Head
-        512: channels.get("model.10", 134),
-        256: channels.get("model.14", 67),
-    }
-
-    # 更新所有层的通道数
-    for section in ['backbone', 'head']:
-        for i, layer in enumerate(cfg[section]):
-            args = layer[-1]
-            if not isinstance(args, list):
-                continue
-
-            # 处理Conv层
-            if layer[2] == 'Conv' and len(args) >= 2:
-                if args[1] in channel_map:
-                    args[1] = channel_map[args[1]]
-
-            # 处理C3层
-            elif layer[2] == 'C3' and len(args) >= 1:
-                if args[0] in channel_map:
-                    args[0] = channel_map[args[0]]
-
-            # 处理Detect层的anchors
-            elif layer[2] == 'Detect':
-                # 更新anchor对应的通道数
-                args[-1] = [
-                    channels.get("model.24.m.0", 133),
-                    channels.get("model.24.m.1", 133),
-                    channels.get("model.24.m.2", 133)
-                ]
-
-    # 保存新配置
-    with open(output_yaml, 'w') as f:
-        yaml.dump(cfg, f, sort_keys=False, default_flow_style=None)
-
-    print(f"剪枝配置文件已生成: {output_yaml}")
-
-
-
 def main():
     # 1. 加载预训练的YOLOv5s模型
     model = load_yolov5s_model(model_path)
@@ -272,6 +202,7 @@ def main():
     print("结构化剪枝完成")
     check_channel_alignment(pruned_model)
     check_residual_connections(pruned_model)
+
     # 3. 测试模型大小变化
     test_model_size(model, pruned_model)
 
@@ -281,11 +212,15 @@ def main():
         'ema': None,
         'updates': 0,
         'optimizer': None,
-        'epoch': -1
+        'epoch': -1,
+        'anchors': [  # 保存anchors信息
+            [10, 13, 16, 30, 33, 23],
+            [30, 61, 62, 45, 59, 119],
+            [116, 90, 156, 198, 373, 326]
+        ]
     }, 'pruned_model.pt')
     print("剪枝后模型已保存")
-    export_pruned_channels(pruned_model)
-    create_pruned_yaml()
+
 
 if __name__ == "__main__":
     main()
