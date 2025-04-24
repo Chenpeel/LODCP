@@ -161,34 +161,46 @@ A[视频序列] --> B
 B --> C[语义分割]
 C --> D[碰撞预测]
 A --> E[目标检测]
-F[模型剪枝] --> E
+F[模型蒸馏]
 E --> G[跟踪匹配]
 H --> I[跟踪目标tracker]
 G --> H[Tracker更新]
 I --> G
 G --> D
-
+%% 调整F节点位置，使用曲线连接
+F ====> |模型压缩| E
 subgraph B[传统处理]
-  B1[Sobel算子]
-	B1 --> B2[阈值过滤]
-	B2 --> B3[检测边界]
-	B3 --> B4[多项式拟合]
-  end
+  B1[LoG/DoG滤波] --> B2[Gabor滤波]
+  B1 --> B2[自适应阈值过滤]
+  B2 --> B3[检测边界]
+  B3 --> B4[多项式拟合]
+end
 subgraph C[语义分割]
-	C1[分割网络] --> C2[Fast-SCNN网络]
-	C2 --> C3[车道线特征提取]
-	C3 --> C4[可行区域划分]
-	end
- subgraph D[碰撞检测]
- 
-  end
- subgraph E[目标检测]
- 	E1[YOLOv5目标检测] --> E2[目标框筛选]
- 	E2 --> E3[?]
- 	end
- 	subgraph G[跟踪匹配]
- 		
- 	end
+  C1[分割网络] --> C2[Fast-SCNN网络]
+  C2 --> C3[车道线特征提取]
+  C3 --> C4[可行区域划分]
+end
+subgraph D[碰撞预测]
+  D1[多帧历史信息] --> D2[时空特征融合]
+  D2 --> D3[TTC计算]
+  D3 --> D4[碰撞概率估计]
+  D5[位置轨迹预测] --> D4
+  I --> D1
+  C4 --> D5
+end
+subgraph E[目标检测]
+  E1[YOLOv5目标检测] --> E2[目标框筛选]
+  E2 --> E3[特征距离]
+end
+subgraph G[跟踪匹配]
+  E3 --> G2
+  G1[IoU运动相似度] --> G2[融合矩阵]
+  G2 --> G3[匈牙利匹配]
+  G3 --> G4[IoU匹配]
+end
+subgraph H[Tracker更新]
+  H1[卡尔曼滤波矩阵] --> H2[重筛跟踪目标track]
+end
 ```
 
 
@@ -363,3 +375,37 @@ $$
 
 
 #### 2.5.2 碰撞时间(TTC)计算模型
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 参考文献
+
+[1] 杨会成, 朱文博, 童英. 基于车内外视觉信息的行人碰撞预警方法[J]. 智能系统学报, 2019, 14(4): 752-760.
+
+[2] 马永杰, 马芸婷, 程时升, 等. 基于改进 YOLOv3 模型与 Deep-SORT 算法的道路车辆检测方法[J]. 交通运输工程学报, 2021, 21(2): 222-231.
+
+[3] Zhang Y, Guo Z, Wu J, et al. Real-time vehicle detection based on improved yolo v5[J]. Sustainability, 2022, 14(19): 12274.
+
+[4] Jocher G, Chaurasia A, Stoken A, et al. ultralytics/yolov5: v7. 0-yolov5 sota realtime instance segmentation[J]. Zenodo, 2022.
+
+[5] 何永明, 邢婉钰, 魏堃, 等. 超高速公路自动驾驶车辆换道轨迹规划策略[J]. Journal of South China University of Technology (Natural Science Edition), 2024, 52(4).
+
+[6] 龙腾, 王彧弋, 林军, 等. 轨道交通车载智能化应用技术发展展望[J]. 机车电传动, 2024 (1): 11-21.
+
+[7] 房亮, 关志伟, 王涛, 等. 基于深度学习 LSTM 的智能车辆避撞模型及验证[J]. 汽车安全与节能学报, 2022, 13(1): 104.
+
+[8] 杜泉成, 王晓, 李灵犀, 等. 行人轨迹预测方法关键问题研究: 现状及展望[J]. 智能科学与技术学报, 2023, 5(2): 143-162.
+
+[9] Wang L, Liu X, Ma J, et al. Real-time steel surface defect detection with improved multi-scale YOLO-v5[J]. Processes, 2023, 11(5): 1357.
+
+[10] Kurniawan H, Hariyanto S. Designing Home Security With Esp32-Cam and IoT-Based Alarm Notification Using Telegram[J]. bit-Tech, 2023, 6(2): 95-102.
