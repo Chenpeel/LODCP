@@ -1,259 +1,253 @@
 import argparse
+import os
+import sys
+import yaml
+import math
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
-from pathlib import Path
-import sys
-import yaml
-from tqdm import tqdm
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
-import warnings
 from datetime import datetime
+import warnings
 warnings.filterwarnings('ignore')
 
 # 添加路径
-sys.path = [p for p in sys.path if "yolov5" not in str(p).lower()]
 PROJECT_ROOT = Path("/Users/alpha/Downloads/selfRepo/lodcp")
-YOLOv5_ROOT = Path("/Users/alpha/Downloads/cloneRepo/yolov5")
-sys.path.insert(0, str(YOLOv5_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from models.yolo import Model
-from utils.dataloaders import LoadImagesAndLabels
-from utils.general import check_dataset, colorstr
-from utils.loss import ComputeLoss
-from utils.torch_utils import de_parallel
-from utils.callbacks import Callbacks
-from val import run as val_run
+# 使用Ultralytics API
+from ultralytics import YOLO
 
 
-class DistillLoss(nn.Module):
-    def __init__(self, model, hyp, distill_weight=0.1):
-        super().__init__()
-        self.criterion = ComputeLoss(model)
-        self.distill_weight = distill_weight
-        self.hyp = hyp
+class DistillYOLO:
+    def __init__(self, opt):
+        self.opt = opt
+        self.device = torch.device(opt.device if opt.device else ('cuda' if torch.cuda.is_available() else 'cpu'))
 
-    def forward(self, student_outputs, teacher_outputs, targets):
-        loss, loss_items = self.criterion(student_outputs, targets)
-        distill_loss = torch.zeros(1, device=student_outputs[0].device)
+        # 加载配置
+        with open(opt.hyp) as f:
+            self.hyp = yaml.safe_load(f)
 
-        # 处理教师输出格式
-        if not isinstance(teacher_outputs, (list, tuple)):
-            teacher_outputs = [teacher_outputs]
-        if not isinstance(student_outputs, (list, tuple)):
-            student_outputs = [student_outputs]
+        # 设置保存路径
+        self.save_dir = Path(f'runs/train/{opt.name}')
+        self.save_dir.mkdir(parents=True, exist_ok=True)
 
-        for s_pred, t_pred in zip(student_outputs, teacher_outputs):
-            if isinstance(t_pred, (list, tuple)):
-                t_pred = t_pred[0] if len(t_pred) > 0 else None
+        # 加载教师模型
+        print(f"Loading teacher model from {opt.teacher_weights}")
+        self.teacher = YOLO(opt.teacher_weights)
 
-            if t_pred is None:
-                continue
+        # 初始化学生模型
+        if opt.student_weights:
+            print(f"Loading student model from {opt.student_weights}")
+            self.student = YOLO(opt.student_weights)
+        else:
+            print(f"Initializing new student model with YOLOv5n")
+            self.student = YOLO('yolov5n.pt')
 
-            # 处理YOLOv5/v7/v8的输出格式 [tensor, list]
-            if t_pred.dim() == 3:  # [bs, 6, 8400]
-                bs, _, num_preds = t_pred.shape
-                split_sizes = [80*80*3, 40*40*3, 20*20*3]
+        # 设置蒸馏权重参数
+        self.initial_distill_weight = 0.5  # 初始蒸馏权重
+        self.final_distill_weight = 0.1    # 最终蒸馏权重
+        self.current_epoch = 0             # 当前训练轮次
+        self.max_epochs = opt.epochs       # 总训练轮次
 
-                if sum(split_sizes) == num_preds:
-                    start = 0
-                    for i, size in enumerate(split_sizes):
-                        end = start + size
-                        t_scale = t_pred[:, :, start:end].permute(0, 2, 1)  # [bs, size, 6]
-                        grid_size = int((size//3)**0.5)
-                        t_scale = t_scale.view(bs, 3, grid_size, grid_size, 6)
+    def get_distill_weight(self):
+        """计算当前轮次的蒸馏权重（使用余弦退火策略）"""
+        # 确保在有效范围内
+        normalized_epoch = min(self.current_epoch, self.max_epochs - 1)
 
-                        # 找到对应的学生输出
-                        s_scale = student_outputs[i]
-                        self._compute_distill_loss(s_scale, t_scale, distill_loss)
-                        start = end
-                else:
-                    # LOGGER.warning(f"Unexpected teacher output shape {t_pred.shape}")
-                    pass
+        # 应用余弦退火公式
+        return self.final_distill_weight + 0.5 * (self.initial_distill_weight - self.final_distill_weight) * \
+               (1 + math.cos(math.pi * normalized_epoch / self.max_epochs))
 
-            elif t_pred.dim() == 5:  # 标准YOLO格式 [bs, na, h, w, C]
-                self._compute_distill_loss(student_outputs[0], t_pred, distill_loss)
-            else:
-                pass
-                # LOGGER.warning(f"Unsupported teacher output dimension {t_pred.dim()}")
+    def train(self):
+        """使用YOLOv8 API训练并进行知识蒸馏"""
+        # 创建带有知识蒸馏功能的学生模型
+        student_model = self.create_distill_model()
 
-        total_loss = loss + self.distill_weight * distill_loss
-        return total_loss, torch.cat((loss_items, distill_loss))
+        # 添加训练状态监控回调
+        self.student.add_callback("on_train_epoch_end", self.epoch_callback)
 
-    def _compute_distill_loss(self, s_pred, t_pred, distill_loss):
-        """计算单个尺度上的蒸馏损失"""
-        if s_pred.shape != t_pred.shape:
-            t_pred = F.interpolate(
-                t_pred.permute(0,1,4,2,3).flatten(0,1),
-                size=s_pred.shape[2:4],
-                mode='nearest'
-            ).view(*s_pred.shape)
-
-        # 分类损失
-        s_cls = s_pred[..., 5:7].sigmoid()
-        t_cls = t_pred[..., 5:7].sigmoid()
-        temp = 3.0
-        distill_loss += F.kl_div(
-            F.log_softmax(s_cls / temp, dim=-1),
-            F.softmax(t_cls / temp, dim=-1),
-            reduction='batchmean'
-        ) * (temp ** 2)
-
-        # 边界框损失
-        s_box = s_pred[..., :4].sigmoid()
-        t_box = t_pred[..., :4].sigmoid()
-        distill_loss += F.mse_loss(s_box, t_box)
-
-def train(opt):
-    # 初始化配置
-    data_dict = check_dataset(opt.data)
-    with open(opt.hyp) as f:
-        hyp = yaml.safe_load(f)
-
-    # 设置默认超参数
-    hyp.setdefault('gradient_clip_val', 10.0)
-    hyp.setdefault('size', opt.imgsz)
-
-    # 数据加载
-    train_loader = DataLoader(
-        LoadImagesAndLabels(
-            data_dict['train'],
-            img_size=opt.imgsz,
-            augment=True,
-            hyp=hyp
-        ),
-        batch_size=opt.batch_size,
-        shuffle=True,
-        collate_fn=LoadImagesAndLabels.collate_fn,
-        pin_memory=True
-    )
-
-    # 初始化设备
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    # 加载教师模型
-    teacher = torch.load(opt.teacher_weights, map_location=device)['model'].float().eval()
-    for p in teacher.parameters():
-        p.requires_grad = False
-
-    # 初始化学生模型
-    student = Model(f'{YOLOv5_ROOT}/models/yolov5n.yaml', ch=3, nc=data_dict['nc']).to(device)
-    student.hyp = hyp
-    if opt.student_weights:
-        ckpt = torch.load(opt.student_weights, map_location=device)
-        student.load_state_dict(ckpt['model'].state_dict(), strict=False)
-
-    # 训练配置
-    optimizer = torch.optim.SGD(
-        student.parameters(),
-        lr=hyp['lr0'],
-        momentum=hyp['momentum'],
-        weight_decay=hyp['weight_decay']
-    )
-
-    scheduler = CosineAnnealingWarmRestarts(
-            optimizer,
-            T_0=10,  # 初始周期长度(epoch)
-            T_mult=1,  # 周期倍增因子
-            eta_min=hyp['lr0'] * hyp['lrf'],  # 最小学习率
+        # 设置训练参数
+        results = student_model.train(
+            data=self.opt.data,
+            epochs=self.opt.epochs,
+            batch=self.opt.batch_size,
+            imgsz=self.opt.imgsz,
+            device=self.opt.device,
+            project=str(self.save_dir.parent),
+            name=self.opt.name,
+            exist_ok=True,
+            patience=100,  # 早停
+            save=True,
+            seed=0,
+            cos_lr=self.opt.cos_lr,  # 使用余弦退火学习率
+            save_dir=str(self.save_dir)  # 确保所有输出保存在正确目录
         )
 
-    # 添加热身阶段
-    warmup_epochs = hyp.get('warmup_epochs', 3)
-    warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-        optimizer,
-        start_factor=0.1,
-        end_factor=1.0,
-        total_iters=warmup_epochs * len(train_loader)
-    )
+        # 最终评估
+        print("\nFinal evaluation of best model:")
+        student_model.val()
 
-    # 组合调度器：先热身，然后余弦退火
-    from torch.optim.lr_scheduler import SequentialLR
-    scheduler = SequentialLR(
-        optimizer,
-        schedulers=[warmup_scheduler, scheduler],
-        milestones=[warmup_epochs * len(train_loader)]
-    )
-    # 训练循环
-    best_fitness = 0.0
-    for epoch in range(opt.epochs):
-        student.train()
-        mloss = torch.zeros(4, device=device)
+        return results
 
-        pbar = tqdm(enumerate(train_loader), total=len(train_loader),
-                    desc=f'Epoch {epoch}/{opt.epochs}')
+    def epoch_callback(self, trainer):
+        """每个训练轮次结束时更新计数器"""
+        self.current_epoch += 1
+        current_weight = self.get_distill_weight()
+        print(f"Epoch {self.current_epoch}/{self.max_epochs} - Current distill weight: {current_weight:.4f}")
 
-        for i, (imgs, targets, paths, _) in pbar:
-            imgs = imgs.to(device, dtype=torch.float32) / 255.0
-            targets = targets.to(device)
+    def create_distill_model(self):
+        """创建一个带有蒸馏功能的学生模型"""
+        # 冻结教师模型
+        teacher_model = self.teacher.model
+        for param in teacher_model.parameters():
+            param.requires_grad = False
+        teacher_model.eval()
 
-            # 前向传播
-            with torch.no_grad():
-                teacher_pred = teacher(imgs)
-            student_pred = student(imgs)
+        # 获取学生模型
+        student_model = self.student
 
-            # 计算损失
-            loss, loss_items = DistillLoss(student, hyp)(student_pred, teacher_pred, targets)
+        # 保存原始前向传播方法的引用
+        original_forward = student_model.model.forward
 
-            # 反向传播
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(student.parameters(), hyp['gradient_clip_val'])
-            optimizer.step()
-            scheduler.step()
+        # 定义包含蒸馏的前向传播方法
+        def forward_with_distillation(x, *args, **kwargs):
+            # 在训练模式下进行蒸馏
+            if student_model.model.training:
+                # 学生模型的原始输出
+                student_outputs = original_forward(x, *args, **kwargs)
 
-            # 更新指标
-            mloss = (mloss * i + loss_items) / (i + 1)
-            pbar.set_postfix_str(
-                f'loss: {mloss.mean().item():.4f} '
-                f'(box: {mloss[0].item():.4f}, cls: {mloss[1].item():.4f}, '
-                f'dfl: {mloss[2].item():.4f}, distill: {mloss[3].item():.4f})'
-            )
+                # 教师模型的输出 (不计算梯度)
+                with torch.no_grad():
+                    teacher_outputs = teacher_model(x, *args, **kwargs)
 
-        # 验证和保存
-        scheduler.step()
-        ckpt = {
-            'epoch': epoch,
-            'model': student.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'hyp': hyp
-        }
+                # 获取当前的蒸馏权重
+                current_distill_weight = self.get_distill_weight()
 
-        # 定期验证
-        if epoch % 10 == 0 or epoch == opt.epochs - 1:
-            metrics = val_run(
-                data=opt.data,
-                weights=None,
-                batch_size=opt.batch_size * 2,
-                imgsz=opt.imgsz,
-                model=student,
-                plots=epoch == opt.epochs - 1,
-                callbacks=callbacks
-            )
+                # 如果在训练阶段，返回(student_outputs, teacher_outputs)
+                # 否则仅返回student_outputs
+                if isinstance(student_outputs, tuple) and len(student_outputs) > 0:
+                    # 一些YOLO模型返回(pred, loss)格式
+                    pred, loss = student_outputs
 
-            # 保存最佳模型
-            fitness = metrics[2]  # mAP@0.5
-            if fitness > best_fitness:
-                best_fitness = fitness
-                torch.save(ckpt, f'runs/train/{opt.name}/best.pt')
+                    # 计算蒸馏损失
+                    distill_loss = self.compute_distill_loss(student_outputs, teacher_outputs)
 
-        # 保存最新模型
-        torch.save(ckpt, f'runs/train/{opt.name}/last.pt')
-        callbacks.run('on_train_epoch_end', epoch=epoch, model=student)
+                    # 将蒸馏损失添加到原始损失中
+                    if isinstance(loss, dict):
+                        # 如果loss是字典，添加新的蒸馏损失项
+                        loss['distill'] = distill_loss * current_distill_weight
+                        # 更新总损失
+                        if 'loss' in loss:
+                            loss['loss'] += distill_loss * current_distill_weight
+                    elif isinstance(loss, torch.Tensor):
+                        # 如果loss是张量，直接加上蒸馏损失
+                        loss += distill_loss * current_distill_weight
 
-    # 最终验证
-    val_run(
-        data=opt.data,
-        weights=f'runs/train/{opt.name}/best.pt',
-        batch_size=opt.batch_size * 2,
-        imgsz=opt.imgsz,
-        plots=True,
-        save_txt=True,
-        save_conf=True,
-        save_json=True
-    )
+                    return pred, loss
+                else:
+                    # 某些情况下可能只返回预测值
+                    return student_outputs
+            else:
+                # 在非训练模式下，使用原始前向传播
+                return original_forward(x, *args, **kwargs)
+
+        # 替换前向传播方法
+        student_model.model.forward = forward_with_distillation
+        print(f"Enabled knowledge distillation in student model (initial weight: {self.initial_distill_weight:.2f}, final weight: {self.final_distill_weight:.2f})")
+
+        return student_model
+
+    def compute_distill_loss(self, student_outputs, teacher_outputs):
+        """计算知识蒸馏损失"""
+        distill_loss = torch.zeros(1, device=self.device)
+
+        # 提取预测结果
+        if isinstance(student_outputs, tuple):
+            student_preds = student_outputs[0]
+        else:
+            student_preds = student_outputs
+
+        if isinstance(teacher_outputs, tuple):
+            teacher_preds = teacher_outputs[0]
+        else:
+            teacher_preds = teacher_outputs
+
+        # 处理YOLOv8的多尺度预测输出
+        if isinstance(student_preds, list) and isinstance(teacher_preds, list):
+            # 遍历每个检测层级
+            for s_pred, t_pred in zip(student_preds, teacher_preds):
+                # 确保形状匹配
+                if s_pred.shape != t_pred.shape:
+                    continue
+
+                # 特征蒸馏 - 软目标蒸馏
+                temp = 3.0  # 温度参数
+
+                # 提取目标置信度
+                s_conf = s_pred[..., 4].sigmoid()
+                t_conf = t_pred[..., 4].sigmoid()
+                # 计算KL散度损失
+                conf_loss = F.kl_div(
+                    F.log_softmax(s_conf / temp, dim=0),
+                    F.softmax(t_conf / temp, dim=0),
+                    reduction='batchmean',
+                    log_target=False
+                ) * (temp * temp)
+
+                # 提取分类预测
+                if s_pred.shape[-1] > 5:  # 如果有类别预测
+                    s_cls = s_pred[..., 5:].sigmoid()
+                    t_cls = t_pred[..., 5:].sigmoid()
+                    # 计算KL散度损失
+                    cls_loss = F.kl_div(
+                        F.log_softmax(s_cls / temp, dim=-1),
+                        F.softmax(t_cls / temp, dim=-1),
+                        reduction='batchmean',
+                        log_target=False
+                    ) * (temp * temp)
+
+                    distill_loss += cls_loss
+
+                # 提取边界框预测
+                s_box = s_pred[..., :4].sigmoid()
+                t_box = t_pred[..., :4].sigmoid()
+                box_loss = F.mse_loss(s_box, t_box)
+
+                # 总蒸馏损失
+                distill_loss += box_loss + conf_loss
+
+        elif isinstance(student_preds, torch.Tensor) and isinstance(teacher_preds, torch.Tensor):
+            # 单一输出情况
+            s_pred = student_preds
+            t_pred = teacher_preds
+
+            # 应用相同的蒸馏方法
+            temp = 3.0
+
+            # 位置和置信度损失
+            if min(s_pred.shape) > 0 and min(t_pred.shape) > 0:
+                s_box = s_pred[..., :4]
+                t_box = t_pred[..., :4]
+                box_loss = F.mse_loss(s_box, t_box)
+
+                distill_loss += box_loss
+
+                # 类别损失 (如果存在)
+                if s_pred.shape[-1] > 5:
+                    s_cls = s_pred[..., 5:]
+                    t_cls = t_pred[..., 5:]
+                    cls_loss = F.kl_div(
+                        F.log_softmax(s_cls / temp, dim=-1),
+                        F.softmax(t_cls / temp, dim=-1),
+                        reduction='batchmean',
+                        log_target=False
+                    ) * (temp * temp)
+
+                    distill_loss += cls_loss
+
+        return distill_loss
+
 
 def parse_opt():
     parser = argparse.ArgumentParser()
@@ -266,8 +260,12 @@ def parse_opt():
     parser.add_argument('--teacher-weights', type=str, required=True, help='teacher model weights path')
     parser.add_argument('--student-weights', type=str, default='', help='student initial weights path')
     parser.add_argument('--name', default='exp', help='save to project/name')
+    parser.add_argument('--cos_lr', action='store_true', help='use cosine learning rate scheduler')
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     opt = parse_opt()
-    train(opt)
+    distiller = DistillYOLO(opt)
+    results = distiller.train()
+    print(f"Training completed. Best results: {results}")
