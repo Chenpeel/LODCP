@@ -1,7 +1,6 @@
 .pio
 .vscode
 .env
-models
 /build/
 data
 *.bin
@@ -11,7 +10,8 @@ __pycache__
 logs
 runs
 *.npy
-!pruned_model.pt
 events.out.tfevents.*
 private.yml
 models/ig_*
+!models/yolov5su/weights
+!models/fastscnn/weights/
