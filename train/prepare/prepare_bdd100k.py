@@ -135,5 +135,5 @@ def convert_bdd100k_to_yolo(bdd_dir, output_dir, data_fraction=1.0):
     print(f"Dataset conversion complete. YOLO format dataset saved to {output_dir}")
 
 if __name__ == "__main__":
-    data_fraction = 0.2
+    data_fraction = 0.01
     convert_bdd100k_to_yolo("data/bdd100k-dataset", "data/bdd100k-yolo", data_fraction=data_fraction)

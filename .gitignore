@@ -1,6 +1,7 @@
 .pio
 .vscode
 .env
+models
 /build/
 data
 *.bin
@@ -9,8 +10,8 @@ prompt.md
 __pycache__
 logs
 runs
-*.pt
-*.pth
 *.npy
+!pruned_model.pt
 events.out.tfevents.*
 private.yml
+models/ig_*

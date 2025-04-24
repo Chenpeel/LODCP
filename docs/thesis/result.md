@@ -155,7 +155,43 @@ To resolve occlusion challenges in multi-object tracking, an improved DeepSORT-b
 
 
 
-**附带序列处理图**
+```mermaid
+graph TD
+A[视频序列] --> B
+B --> C[语义分割]
+C --> D[碰撞预测]
+A --> E[目标检测]
+F[模型剪枝] --> E
+E --> G[跟踪匹配]
+H --> I[跟踪目标tracker]
+G --> H[Tracker更新]
+I --> G
+G --> D
+
+subgraph B[传统处理]
+  B1[Sobel算子]
+	B1 --> B2[阈值过滤]
+	B2 --> B3[检测边界]
+	B3 --> B4[多项式拟合]
+  end
+subgraph C[语义分割]
+	C1[分割网络] --> C2[Fast-SCNN网络]
+	C2 --> C3[车道线特征提取]
+	C3 --> C4[可行区域划分]
+	end
+ subgraph D[碰撞检测]
+ 
+  end
+ subgraph E[目标检测]
+ 	E1[YOLOv5目标检测] --> E2[目标框筛选]
+ 	E2 --> E3[?]
+ 	end
+ 	subgraph G[跟踪匹配]
+ 		
+ 	end
+```
+
+
 
 
 

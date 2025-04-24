@@ -1,21 +1,22 @@
 idf_component_register(
     SRCS
-        "main.c"            # 主代码文件
-        #"camera_ops.c"      # 可选：摄像头操作分离文件
-        #"wifi_connect.c"    # 可选：WiFi连接模块
-
+        "main.cpp"
+        "init.cpp"
+        "wifi.cpp"
+        "process.cpp"
     INCLUDE_DIRS
-        "."                 # 当前目录头文件
-        "../components"     # 自定义组件头文件
+        "."
+        "../components"
+        "../include"
 
     REQUIRES
-        esp32-camera        # 摄像头驱动
-        esp_http_server     # HTTP服务器
-        esp_https_ota       # 可选：OTA更新
-        driver             # ESP32 基础驱动
-        freertos           # RTOS 支持
-        nvs_flash          # 存储配置
-        sdmmc              # 如需SD卡支持
+        esp32-camera
+        esp_http_server
+        esp_https_ota
+        driver
+        freertos
+        nvs_flash
+        sdmmc
         json               # 如需JSON处理
         mbedtls            # 加密相关
 
