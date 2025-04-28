@@ -19,9 +19,10 @@ jobs:
 
       # 设置 ESP-IDF 环境
       - name: Set up ESP-IDF
-        uses: espressif/esp-idf-ci-action@v2
+        uses: espressif/idf-actions@v1
         with:
-          version: v5.1
+          esp_idf_version: v5.1
+          target: esp32
 
       # 安装依赖
       - name: Install dependencies
@@ -35,10 +36,14 @@ jobs:
 
       # 编译项目
       - name: Build project
-        run: idf.py build
+        working-directory: ${{ github.workspace }}
+        run: |
+          . $IDF_PATH/export.sh
+          cd firmware
+          idf.py build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: firmware
-          path: build/
+          path: firmware/build/
