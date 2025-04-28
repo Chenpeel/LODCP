@@ -3,10 +3,10 @@ name: ESP32 Build
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build:
@@ -28,6 +28,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-opencv
+          mkdir -p firmware/components
+          git clone https://github.com/espressif/esp32-camera.git firmware/components/esp32-camera
+          git clone --recursive https://github.com/espressif/esp-tflite-micro.git firmware/components/tflite-lib
+          git clone https://github.com/espressif/esp-dl.git firmware/components/esp-dl
 
       # 编译项目
       - name: Build project

@@ -4,6 +4,11 @@ idf_component_register(
         "init.cpp"
         "wifi.cpp"
         "process.cpp"
+        "model_loader.cpp"
+        "deep_sort.cpp"
+        "semantic_seg.cpp"
+        "collision.cpp"
+        "image_filters.cpp"
     INCLUDE_DIRS
         "."
         "../components"
@@ -17,10 +22,12 @@ idf_component_register(
         freertos
         nvs_flash
         sdmmc
-        json               # 如需JSON处理
-        mbedtls            # 加密相关
-
-    PRIV_REQUIRES
-        esp_timer          # 高精度定时器
-        esp_wifi          # WiFi底层驱动
+        json
+        mbedtls
+        tflite-lib
+        esp_timer
+        esp_wifi
+        fatfs
+        esp-dl
+        pthread
 )

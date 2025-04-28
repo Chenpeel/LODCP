@@ -14,9 +14,9 @@
 
 ## Abstract
 
-In recent years, despite rapid advancements in China's automotive industry and continuous innovations in intelligent driving technologies, traffic accident rates remain a critical challenge. To address the limitations of conventional road obstacle detection methods – including insufficient accuracy, high engineering complexity, and strong reliance on human intervention – this study proposes a deep learning-based approach for lane obstacle detection and collision warning. By constructing a technical framework integrating visual perception and motion prediction, the system effectively enhances driving safety alert capabilities. 
+In recent years, despite rapid advancements in China's automotive industry and continuous innovations in intelligent driving technologies, traffic accident rates remain a critical challenge. To address the limitations of conventional road obstacle detection methods – including insufficient accuracy, high engineering complexity, and strong reliance on human intervention – this study proposes a deep learning-based approach for lane obstacle detection and collision warning. By constructing a technical framework integrating visual perception and motion prediction, the system effectively enhances driving safety alert capabilities.
 
-For lane demarcation, the integration of traditional image processing algorithms with a Fast-SCNN deep learning model significantly enhances the robustness of lane marking recognition under challenging lighting and adverse weather conditions. The obstacle detection module employs a lightweight modified YOLOv5s architecture, achieving optimal balance between detection accuracy and real-time performance through pruning and quantization techniques. 
+For lane demarcation, the integration of traditional image processing algorithms with a Fast-SCNN deep learning model significantly enhances the robustness of lane marking recognition under challenging lighting and adverse weather conditions. The obstacle detection module employs a lightweight modified YOLOv5s architecture, achieving optimal balance between detection accuracy and real-time performance through pruning and quantization techniques.
 
 To resolve occlusion challenges in multi-object tracking, an improved DeepSORT-based algorithm is developed, replacing traditional Mahalanobis distance metrics with Intersection over Union (IoU) measurements to optimize target motion association mechanisms. The collision prediction module implements ray-casting for same-lane obstacle screening, coupled with multi-frame motion trajectory analysis to establish a risk assessment model that enables timely warning decisions. Experimental validation demonstrates substantial improvements in obstacle identification, tracking stability, and collision warning timeliness.
 
@@ -66,7 +66,7 @@ To resolve occlusion challenges in multi-object tracking, an improved DeepSORT-b
 ## 第三章 车道预行区域划分
 ### 3.1 图像增强处理
 ### 3.2 传统图像处理
-### 3.3 FastSCNN动态权重加载 
+### 3.3 FastSCNN动态权重加载
 ### 3.4 区域划分策略
 
 ---
@@ -87,22 +87,22 @@ To resolve occlusion challenges in multi-object tracking, an improved DeepSORT-b
 ---
 
 ## 第五章 障碍物碰撞概率与预警
-#### 5.1 目标行为预测  
-##### 5.1.1 运动轨迹建模   
-##### 5.1.2 速度估计优化  
-#### 5.2 风险动态评估  
-##### 5.2.1 TTC多维度计算  
-##### 5.2.2 风险等级映射  
-#### 5.3 预警决策系统  
-##### 5.3.1 分级预警策略  
-##### 5.3.2 系统实时性保障  
+#### 5.1 目标行为预测
+##### 5.1.1 运动轨迹建模
+##### 5.1.2 速度估计优化
+#### 5.2 风险动态评估
+##### 5.2.1 TTC多维度计算
+##### 5.2.2 风险等级映射
+#### 5.3 预警决策系统
+##### 5.3.1 分级预警策略
+##### 5.3.2 系统实时性保障
 
 ---
 
 ## 第六章 总结与展望
-#### 6.1 研究成果总结  
-#### 6.2 技术局限性分析    
-#### 6.3 展望  
+#### 6.1 研究成果总结
+#### 6.2 技术局限性分析
+#### 6.3 展望
 
 ---
 
@@ -157,49 +157,71 @@ To resolve occlusion challenges in multi-object tracking, an improved DeepSORT-b
 
 ```mermaid
 graph TD
-A[视频序列] --> B
-B --> C[语义分割]
-C --> D[碰撞预测]
-A --> E[目标检测]
-F[模型蒸馏]
-E --> G[跟踪匹配]
+A[视频序列/摄像头] --> B[传统图像处理]
+B --> |预处理图像| C[语义分割]
+C --> |分割掩码| D[碰撞预测]
+A --> |预处理图像| E[目标检测]
+F[模型量化与蒸馏]
+
+E --> |检测框| G[跟踪匹配]
+G --> |匹配信息| H[Tracker更新]
 H --> I[跟踪目标tracker]
-G --> H[Tracker更新]
-I --> G
-G --> D
-%% 调整F节点位置，使用曲线连接
-F ====> |模型压缩| E
+I --> |跟踪状态| G
+I --> |运动轨迹| D
+
+%% 并行处理
+A --> PA[线程1]
+A --> PB[线程2]
+PA --> C
+PB --> E
+
+%% 模型压缩
+F ====> |量化模型| C
+F ====> |量化模型| E
+
 subgraph B[传统处理]
-  B1[LoG/DoG滤波] --> B2[Gabor滤波]
-  B1 --> B2[自适应阈值过滤]
-  B2 --> B3[检测边界]
-  B3 --> B4[多项式拟合]
+  B1[帧解码与格式转换] --> B2[图像增强]
+  B2 --> B3[特征提取]
+  B3 --> B4[边缘检测与拟合]
 end
+
 subgraph C[语义分割]
-  C1[分割网络] --> C2[Fast-SCNN网络]
-  C2 --> C3[车道线特征提取]
-  C3 --> C4[可行区域划分]
+  C1[FastSCNN预处理] --> C2[模型推理]
+  C2 --> C3[后处理掩码]
+  C3 --> C4[可行区域分析]
 end
+
 subgraph D[碰撞预测]
-  D1[多帧历史信息] --> D2[时空特征融合]
+  D1[历史轨迹分析] --> D2[时空特征融合]
   D2 --> D3[TTC计算]
-  D3 --> D4[碰撞概率估计]
-  D5[位置轨迹预测] --> D4
+  D3 --> D4[碰撞风险评估]
+  C4 --> D5[环境约束]
+  D5 --> D4
   I --> D1
-  C4 --> D5
 end
+
 subgraph E[目标检测]
-  E1[YOLOv5目标检测] --> E2[目标框筛选]
-  E2 --> E3[特征距离]
+  E1[图像预处理] --> E2[YOLOv5推理]
+  E2 --> E3[后处理检测框]
+  E3 --> E4[置信度过滤]
 end
+
 subgraph G[跟踪匹配]
-  E3 --> G2
-  G1[IoU运动相似度] --> G2[融合矩阵]
-  G2 --> G3[匈牙利匹配]
-  G3 --> G4[IoU匹配]
+  E4 --> G1
+  G1[计算IoU矩阵] --> G2[匈牙利算法匹配]
+  G2 --> G3[更新匹配状态]
 end
+
 subgraph H[Tracker更新]
-  H1[卡尔曼滤波矩阵] --> H2[重筛跟踪目标track]
+  H1[卡尔曼滤波预测] --> H2[状态更新]
+  H2 --> H3[新目标创建]
+  H3 --> H4[过期目标清理]
+end
+
+subgraph S[SD卡存储]
+  S1[模型文件] --> S2[加载模型]
+  S2 --> C1
+  S2 --> E1
 end
 ```
 
@@ -214,39 +236,39 @@ end
 
 
 ### 2.1 图像处理基础
-作为自动驾驶感知系统的前端预处理模块，图像处理技术承担着从原始传感器数据中提取有效信息的重任。本节所述的去噪、形态学操作等技术构成环境感知的底层技术基座，其输出质量直接影响后续深度学习模型的性能边界。特别是在复杂交通场景中，路面反光、雨雾干扰等噪声的抑制能力，决定了车道线识别、障碍物检测等高层任务的可靠性阈值。 
+作为自动驾驶感知系统的前端预处理模块，图像处理技术承担着从原始传感器数据中提取有效信息的重任。本节所述的去噪、形态学操作等技术构成环境感知的底层技术基座，其输出质量直接影响后续深度学习模型的性能边界。特别是在复杂交通场景中，路面反光、雨雾干扰等噪声的抑制能力，决定了车道线识别、障碍物检测等高层任务的可靠性阈值。
 
 #### 2.1.1 传统图像增强技术
 
-1. **去噪处理**  
+1. **去噪处理**
 数字图像在采集、传输过程中易受设备噪声、信道干扰等因素影响，典型噪声类型包括高斯噪声、椒盐噪声等。去噪算法的核心在于平衡噪声抑制与特征保留，常用方法包括：
 
-（1）**中值滤波**：非线性滤波方法，采用滑动窗口内像素值中位数替代中心像素。其优势在于有效抑制脉冲噪声同时保持边缘锐度，计算复杂度为O(n²)，适用于中低分辨率图像处理。数学表达如式(2-1)：  
-$$M(x,y) = \text{median}\{f(i,j) | i \in [x-k,x+k], j \in [y-k,y+k]\} \quad (2-1)$$  
+（1）**中值滤波**：非线性滤波方法，采用滑动窗口内像素值中位数替代中心像素。其优势在于有效抑制脉冲噪声同时保持边缘锐度，计算复杂度为O(n²)，适用于中低分辨率图像处理。数学表达如式(2-1)：
+$$M(x,y) = \text{median}\{f(i,j) | i \in [x-k,x+k], j \in [y-k,y+k]\} \quad (2-1)$$
 其中窗口尺寸k需根据噪声强度与图像分辨率进行参数调优。
 
 （2） **高斯滤波**：线性平滑方法，采用高斯核函数进行加权平均。其频域特性使其对高斯噪声具有最优抑制效果，但会导致边缘模糊现象。标准差σ决定平滑强度，建议取值1.5-2.5像素范围。
 
 （3） **均值滤波**：基础线性算法，通过邻域均值计算实现快速去噪。算法复杂度O(n)使其适用于实时系统，但对椒盐噪声敏感，易造成细节丢失。
 
-在实际车载系统开发中，需根据传感器特性选择适配的滤波策略：CMOS相机受限于制造工艺易产生椒盐噪声，多采用中值滤波预处理；而毫米波雷达的点云数据因高斯分布特性，更适合高斯滤波平滑。这种传感器-算法匹配原则大幅提升了本研究中多模态感知系统的稳定性。 
+在实际车载系统开发中，需根据传感器特性选择适配的滤波策略：CMOS相机受限于制造工艺易产生椒盐噪声，多采用中值滤波预处理；而毫米波雷达的点云数据因高斯分布特性，更适合高斯滤波平滑。这种传感器-算法匹配原则大幅提升了本研究中多模态感知系统的稳定性。
 
-传统图像处理与深度学习并非替代关系，而是构成感知系统的正交维度。前者提供物理先验约束，后者实现语义理解突破，二者的协同将贯穿本文技术框架始终。 
+传统图像处理与深度学习并非替代关系，而是构成感知系统的正交维度。前者提供物理先验约束，后者实现语义理解突破，二者的协同将贯穿本文技术框架始终。
 
 #### 2.1.2 形态学运算与边缘检测
 **形态学处理**通过结构化元素操作改变目标区域拓扑结构，主要方法包括：
 
-（1） **腐蚀运算**（式2-4）：  
-$$(A \ominus B)(i,j) = \min_{(x,y)\in B}\{A(i+x,j+y)\} \quad (2-4)$$  
+（1） **腐蚀运算**（式2-4）：
+$$(A \ominus B)(i,j) = \min_{(x,y)\in B}\{A(i+x,j+y)\} \quad (2-4)$$
 可消除细小噪点但导致目标收缩，在车道线检测中用于分离粘连标记。
 
-（2）**膨胀运算**（式2-5）：  
-$$(A \oplus B)(i,j) = \max_{(x,y)\in B}\{A(i+x,j+y)\} \quad (2-5)$$  
+（2）**膨胀运算**（式2-5）：
+$$(A \oplus B)(i,j) = \max_{(x,y)\in B}\{A(i+x,j+y)\} \quad (2-5)$$
 用于填补目标区域空洞，增强障碍物轮廓连续性。
 
-（3）**开运算**（式2-6）与**闭运算**（式2-7）：  
-$$A \circ B = (A \ominus B) \oplus B \quad (2-6)$$  
-$$A \bullet B = (A \oplus B) \ominus B \quad (2-7)$$  
+（3）**开运算**（式2-6）与**闭运算**（式2-7）：
+$$A \circ B = (A \ominus B) \oplus B \quad (2-6)$$
+$$A \bullet B = (A \oplus B) \ominus B \quad (2-7)$$
 开运算可去除雷达点云中的孤立噪声，闭运算适用于修补激光雷达的测量盲区。
 
 **边缘检测**作为自动驾驶环境感知的核心技术，主要方法包括：
@@ -261,25 +283,25 @@ $$A \bullet B = (A \oplus B) \ominus B \quad (2-7)$$
 
 ### 2.2 深度学习视觉模型
 
-自动驾驶场景对视觉模型提出双重约束：一方面需处理1080P高分辨率输入以捕捉远处障碍细节，另一方面受限于车载芯片的功耗墙。这种矛盾驱动着网络架构在感受野扩展与计算效率间的持续进化，也解释了本研究选择YOLOv5s与FastSCNN作为基模型的深层逻辑——二者在PASCAL VOC与Cityscapes数据集上的帕累托最优特性，可满足实时性要求下的精度保障。 
+自动驾驶场景对视觉模型提出双重约束：一方面需处理1080P高分辨率输入以捕捉远处障碍细节，另一方面受限于车载芯片的功耗墙。这种矛盾驱动着网络架构在感受野扩展与计算效率间的持续进化，也解释了本研究选择YOLOv5s与FastSCNN作为基模型的深层逻辑——二者在PASCAL VOC与Cityscapes数据集上的帕累托最优特性，可满足实时性要求下的精度保障。
 
 #### 2.2.1 卷积神经网络架构演进
 
 现代CNN架构的演进本质是特征抽象能力与计算效率的博弈过程，其核心创新体现在三个维度：
 
-**多尺度特征交互机制**  
+**多尺度特征交互机制**
 基于特征金字塔的跨层融合架构（式2-14），通过跳跃连接实现多分辨率特征的语义对齐：
 $$F_{fusion} = \sum_{i=1}^n \phi_i(F_{high}^i) \odot \psi_i(F_{low}^i)$$
 其中φ、ψ为可学习的空间注意力模块，⊙表示逐元素相乘。该机制显著增强了复杂场景下的语义理解能力。
 
-**轻量化拓扑设计**  
+**轻量化拓扑设计**
 YOLO系列通过跨阶段局部网络（CSPNet）重构特征提取路径（式2-15）：
 $$CSP(X) = Conv_{1×1}(X_{[:c/2]}) \oplus X_{[c/2:]}$$
 其中⊕代表通道拼接，这种结构设计在保持感受野的同时减少梯度冗余。
 
-**时序感知建模**  
+**时序感知建模**
 
-在时序建模框架设计中，传统3D卷积带来的计算负担与车载平台算力形成尖锐矛盾。为此，本研究创新性地采用运动矢量预测替代稠密时空卷积，通过式(2-16)的分解式建模，在保持轨迹预测精度的同时将计算复杂度降低至O(n log n)。 
+在时序建模框架设计中，传统3D卷积带来的计算负担与车载平台算力形成尖锐矛盾。为此，本研究创新性地采用运动矢量预测替代稠密时空卷积，通过式(2-16)的分解式建模，在保持轨迹预测精度的同时将计算复杂度降低至O(n log n)。
 
 $$F_{mot} = \sum_{t=1}^T \omega_t \cdot Conv3D(F_{rgb}^t)$$
 动态权重ω_t通过LSTM时序分析网络自适应生成，有效捕获目标运动轨迹。
@@ -287,12 +309,12 @@ $$F_{mot} = \sum_{t=1}^T \omega_t \cdot Conv3D(F_{rgb}^t)$$
 #### 2.2.2 轻量化模型设计原理
 轻量化设计本质是在高维参数空间中寻找最优子网络，其理论框架包含三个核心要素：
 
-**结构化参数剪枝**  
+**结构化参数剪枝**
 基于微分几何的流形学习理论（式2-17），通过曲率分析识别冗余参数：
 $$\mathcal{C}(w_i) = \frac{||\nabla_w L - \nabla_{w/\|w\|} L||^2}{\|w\|^3}$$
 当曲率值低于阈值τ时，判定该参数处于平坦损失区域可被移除。
 
-**量化编码理论**  
+**量化编码理论**
 建立参数分布的变分量化模型（式2-18）：
 $$\min_{Q} \mathbb{E}_{w\sim p(w)}[D_{KL}(q(w)\|Q(w))] + \lambda \mathbb{E}[Q(w)]$$
 其中Q(w)为量化后的离散分布，该优化目标实现精度损失的理论下界控制。
@@ -301,7 +323,7 @@ $$\min_{Q} \mathbb{E}_{w\sim p(w)}[D_{KL}(q(w)\|Q(w))] + \lambda \mathbb{E}[Q(w)
 
 ### 2.3 语义分割技术
 
-作为环境感知的核心输出，语义分割质量直接决定路径规划的安全性边界。本研究在FastSCNN基础上引入三阶优化：① 通过微分方程建模特征传播过程，增强算法在极端光照下的泛化能力；② 设计几何约束损失函数，将先验道路拓扑知识编码至网络训练过程；③ 建立传统CV与DL的混合推断框架，利用形态学操作的确定性补偿深度学习模型的概率性缺陷。 
+作为环境感知的核心输出，语义分割质量直接决定路径规划的安全性边界。本研究在FastSCNN基础上引入三阶优化：① 通过微分方程建模特征传播过程，增强算法在极端光照下的泛化能力；② 设计几何约束损失函数，将先验道路拓扑知识编码至网络训练过程；③ 建立传统CV与DL的混合推断框架，利用形态学操作的确定性补偿深度学习模型的概率性缺陷。
 
 #### 2.3.1 FastSCNN网络结构解析
 FastSCNN采用双流异构架构实现效率与精度的平衡，其数学建模如式(2-20)所示：

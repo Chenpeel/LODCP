@@ -15,7 +15,7 @@ list(APPEND EXTRA_COMPONENT_DIRS
 
 # 可选：全局编译选项
 add_compile_options(
-    -Wno-unused-variable   # 禁用特定警告
+    -Wno-unused-variable
     -Wno-unused-but-set-variable
 )
 
