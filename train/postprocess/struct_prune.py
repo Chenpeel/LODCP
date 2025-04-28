@@ -4,8 +4,8 @@ from pathlib import Path
 import sys
 
 # 添加路径
-PROJECT_ROOT = Path("/Users/alpha/Downloads/selfRepo/lodcp")
-YOLOv5_ROOT = Path("/Users/alpha/Downloads/cloneRepo/yolov5")
+PROJECT_ROOT = Path("~/Downloads/selfRepo/lodcp")
+YOLOv5_ROOT = Path("~/Downloads/cloneRepo/yolov5")
 sys.path.insert(0, str(YOLOv5_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT))
 from models.experimental import attempt_load
@@ -81,7 +81,7 @@ def generate_pruned_yaml(model):
     return yaml_str
 
 if __name__ == "__main__":
-    pruned_model = prune_and_save("/Users/alpha/Downloads/selfRepo/lodcp/models/yolov5su/weights/best.pt")
+    pruned_model = prune_and_save("models/yolov5su/weights/best.pt")
 
     # 导出为ONNX验证
     torch.onnx.export(

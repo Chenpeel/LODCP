@@ -33,7 +33,6 @@ jobs:
       - name: Build project
         run: idf.py build
 
-      # 可选：上传构建产物
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:

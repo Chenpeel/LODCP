@@ -1,3 +1,7 @@
+# DistillYOLO
+# USE Ultralytics API
+
+# This Example for YOLOv5su teach YOLOv5nu
 import argparse
 import os
 import sys
@@ -11,11 +15,9 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
-# 添加路径
-PROJECT_ROOT = Path("/Users/alpha/Downloads/selfRepo/lodcp")
+PROJECT_ROOT = Path("~/Downloads/selfRepo/lodcp")
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# 使用Ultralytics API
 from ultralytics import YOLO
 
 

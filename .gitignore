@@ -12,7 +12,7 @@ runs
 *.npy
 events.out.tfevents.*
 private.yml
-models/ig_*
+models/z_ig_*
 !models/yolov5su/weights
 !models/fastscnn/weights/
 *.drawio
