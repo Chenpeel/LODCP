@@ -1,3 +1,6 @@
 [submodule "firmware/components/tflite-micro"]
 	path = firmware/components/tflite-micro
 	url = https://github.com/tensorflow/tflite-micro.git
+[submodule "firmware/components/esp32-camera"]
+	path = firmware/components/esp32-camera
+	url = https://github.com/espressif/esp32-camera.git

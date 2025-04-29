@@ -1,4 +1,6 @@
 #pragma once
+#include "esp_camera.h"
+
 #define CAMERA_MODEL_AI_THINKER
 
 #if defined(CAMERA_MODEL_AI_THINKER)
@@ -44,4 +46,6 @@ static camera_config_t camera_config = {.pin_pwdn = PWDN_GPIO_NUM,
                                         .pixel_format = PIXFORMAT_JPEG,
                                         .frame_size = FRAMESIZE_SVGA,
                                         .jpeg_quality = 12,
-                                        .fb_count = 2};
+                                        .fb_count = 2,
+                                        .fb_location = CAMERA_FB_IN_PSRAM,
+                                        .grab_mode = CAMERA_GRAB_WHEN_EMPTY};

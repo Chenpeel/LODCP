@@ -3,13 +3,9 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "freertos/event_groups.h"
+
 static const char *TAG = "WiFi";
 static EventGroupHandle_t s_wifi_event_group;
-
-// 事件组比特位
-#define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT BIT1
-
 static int s_retry_num = 0;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
@@ -56,11 +52,12 @@ esp_err_t init_wifi() {
           {
               .ssid = WIFI_SSID,
               .password = WIFI_PASS,
+              .threshold.authmode = WIFI_AUTH_WPA2_PSK,
           },
   };
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 
   ESP_LOGI(TAG, "WiFi initialization finished");
