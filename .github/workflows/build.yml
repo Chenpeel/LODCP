@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir -p $HOME/esp
           cd $HOME/esp
-          git clone -b v5.1 --recursive https://github.com/espressif/esp-idf.git
+          git clone https://github.com/espressif/esp-idf.git
           cd esp-idf
           ./install.sh esp32
           echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
@@ -46,13 +46,13 @@ jobs:
 
           # 克隆所需组件
           echo "克隆 ESP32-Camera 组件..."
-          git clone https://github.com/espressif/esp32-camera.git
+          git clone https://github.com/espressif/esp32-camera.git esp32-camera
 
           echo "克隆 ESP-DL 组件..."
-          git clone https://github.com/espressif/esp-dl.git
+          git clone https://github.com/espressif/esp-dl.git esp-dl
 
           echo "克隆 TFLite-Micro 组件..."
-          git clone https://github.com/tensorflow/tflite-micro.git
+          git clone https://github.com/tensorflow/tflite-micro.git  tflite-micro
 
           # 回到固件目录
           cd ../
@@ -75,6 +75,14 @@ jobs:
         run: |
           source $HOME/esp/esp-idf/export.sh
           cd firmware
+          export IDF_TARGET=esp32
+          cat > sdkconfig.defaults << EOF
+          CONFIG_ESP32_SPIRAM_SUPPORT=y
+          CONFIG_CAMERA_SUPPORT=y
+          CONFIG_CAMERA_MODEL_ESP_EYE=n
+          CONFIG_CAMERA_MODEL_M5STACK_PSRAM=n
+          CONFIG_CAMERA_MODEL_AI_THINKER=y
+          EOF
 
           # 列出所有文件和目录，帮助调试
           echo "固件目录结构:"
@@ -82,6 +90,9 @@ jobs:
 
           echo "组件目录结构:"
           ls -la components/
+          ls -la components/tflite-micro
+          ls -la components/esp-dl
+          ls -la components/esp32-camera
 
           echo "主目录结构:"
           ls -la main/
@@ -90,6 +101,8 @@ jobs:
           ls -la include/
 
           # 运行构建
+          idf.py set-target esp32
+          idf.py defconfig
           idf.py build
 
       # 保存构建日志
