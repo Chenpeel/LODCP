@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 设置 ESP-IDF 环境
+      # 手动安装 ESP-IDF
       - name: Install ESP-IDF
         run: |
           mkdir -p $HOME/esp
@@ -27,15 +27,60 @@ jobs:
           ./install.sh esp32
           echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
 
-      # 安装依赖
+      # 安装依赖并正确设置组件
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-opencv
-          mkdir -p firmware/components
-          git clone https://github.com/espressif/esp32-camera.git firmware/components/esp32-camera
-          git clone --recursive https://github.com/espressif/esp-tflite-micro.git firmware/components/tflite-lib
-          git clone https://github.com/espressif/esp-dl.git firmware/components/esp-dl
+
+          # 安装ESP-IDF组件
+          cd firmware
+
+          # 使用ESP-IDF组件管理器安装所需组件
+          source $HOME/esp/esp-idf/export.sh
+
+          # 安装 ESP32-Camera
+          idf.py add-dependency "espressif/esp32-camera^1.0.0"
+
+          # 安装 ESP-DL
+          idf.py add-dependency "espressif/esp-dl^1.3.0"
+
+          # 安装 TFLite-Micro
+          idf.py add-dependency "espressif/esp-tflite-micro^1.0.0"
+
+          # 创建一个修改过的main/CMakeLists.txt来避免找不到的组件
+          echo '
+          idf_component_register(
+            SRCS
+              "main.cpp"
+              "init.cpp"
+              "wifi.cpp"
+              "process.cpp"
+              "model_loader.cpp"
+              "deep_sort.cpp"
+              "semantic_seg.cpp"
+              "collision.cpp"
+              "image_filters.cpp"
+            INCLUDE_DIRS
+              "."
+              "../components"
+              "../include"
+            REQUIRES
+              esp32-camera
+              esp_http_server
+              esp_https_ota
+              driver
+              freertos
+              nvs_flash
+              sdmmc
+              json
+              mbedtls
+              esp_timer
+              esp_wifi
+              fatfs
+              pthread
+          )
+          ' > main/CMakeLists.txt
 
       # 编译项目
       - name: Build project
@@ -46,7 +91,17 @@ jobs:
 
       # 保存构建产物
       - name: Save build directory
+        if: always()
         run: |
-          mkdir -p /tmp/firmware
-          cp -r firmware/build/* /tmp/firmware/
-          echo "Build artifacts saved to /tmp/firmware"
+          if [ -d firmware/build ]; then
+            mkdir -p /tmp/firmware
+            cp -r firmware/build/* /tmp/firmware/
+            echo "Build artifacts saved to /tmp/firmware"
+            # 输出编译日志，帮助调试
+            if [ -f firmware/build/log/idf_py_stderr_output_* ]; then
+              echo "==== Compilation Errors ===="
+              cat firmware/build/log/idf_py_stderr_output_*
+            fi
+          else
+            echo "Build directory not found"
+          fi
