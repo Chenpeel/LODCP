@@ -27,109 +27,171 @@ jobs:
           ./install.sh esp32
           echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
 
+      # 检查项目结构并纠错
+      - name: Check project structure
+        run: |
+          echo "当前工作目录: $(pwd)"
+          echo "项目结构:"
+          ls -la
+
+          # 确保firmware目录存在
+          if [ ! -d "firmware" ]; then
+            echo "Error: firmware directory not found!"
+            exit 1
+          fi
+
+          # 检查固件目录结构
+          echo "固件目录结构:"
+          ls -la firmware/
+
+          # 确保main目录存在
+          if [ ! -d "firmware/main" ]; then
+            echo "Error: firmware/main directory not found!"
+            exit 1
+          fi
+
+          # 检查CMakeLists.txt
+          if [ ! -f "firmware/main/CMakeLists.txt" ]; then
+            echo "警告: firmware/main/CMakeLists.txt not found!"
+          fi
+
       # 安装依赖并正确设置组件
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-opencv
 
-          # 安装ESP-IDF组件
-          cd firmware
+          # 创建组件目录
+          mkdir -p firmware/components
+          cd firmware/components
 
-          # 使用ESP-IDF组件管理器安装所需组件
-          source $HOME/esp/esp-idf/export.sh
+          # 克隆所需组件
+          echo "克隆 ESP32-Camera 组件..."
+          git clone https://github.com/espressif/esp32-camera.git
 
-          # 安装 ESP32-Camera
-          idf.py add-dependency "espressif/esp32-camera^1.0.0"
-
-          # 查看可用的ESP-DL版本
-          echo "查询可用的ESP-DL版本..."
-          cd managed_components || mkdir -p managed_components
+          echo "克隆 ESP-DL 组件..."
           git clone https://github.com/espressif/esp-dl.git
-          cd esp-dl
-          echo "使用直接克隆的ESP-DL仓库"
 
-          # 安装 TFLite-Micro
-          cd ../../
-          idf.py add-dependency "espressif/tflite-micro^1.0.0" || echo "TFLite-Micro添加失败，尝试直接克隆"
+          echo "克隆 TFLite-Micro 组件..."
+          git clone --recursive https://github.com/espressif/esp-tflite-micro.git tflite-lib
 
-          # 如果添加依赖失败，直接克隆
-          if [ ! -d managed_components/tflite-micro ]; then
-            cd managed_components || mkdir -p managed_components
-            git clone https://github.com/espressif/esp-tflite-micro.git tflite-micro
-            cd ..
+          # 回到固件目录
+          cd ../
+
+          # 显示组件结构
+          echo "组件目录结构:"
+          ls -la components/
+
+      # 修复源代码和CMakeLists.txt
+      - name: Fix build files
+        run: |
+          # 确保main目录存在
+          if [ ! -d "firmware/main" ]; then
+            echo "Error: firmware/main directory not found!"
+            exit 1
           fi
 
-          # 创建一个修改过的main/CMakeLists.txt来避免找不到的组件
+          # 检查并修复深度排序文件名不一致问题
+          if [ -f "firmware/main/deepsort.cpp" ] && [ ! -f "firmware/main/deep_sort.cpp" ]; then
+            echo "重命名 deepsort.cpp 到 deep_sort.cpp"
+            cp firmware/main/deepsort.cpp firmware/main/deep_sort.cpp
+          fi
+
+          if [ -f "firmware/include/deepsort.h" ] && [ ! -f "firmware/include/deep_sort.h" ]; then
+            echo "重命名 deepsort.h 到 deep_sort.h"
+            cp firmware/include/deepsort.h firmware/include/deep_sort.h
+          fi
+
+          # 更新 CMakeLists.txt 以使用我们的组件
           echo '
           idf_component_register(
-            SRCS
-              "main.cpp"
-              "init.cpp"
-              "wifi.cpp"
-              "process.cpp"
-              "model_loader.cpp"
-              "deep_sort.cpp"
-              "semantic_seg.cpp"
-              "collision.cpp"
-              "image_filters.cpp"
-            INCLUDE_DIRS
-              "."
-              "../managed_components"
-              "../managed_components/esp-dl/include"
-              "../managed_components/tflite-micro/tensorflow/lite"
-              "../include"
-            REQUIRES
-              esp32-camera
-              esp_http_server
-              esp_https_ota
-              driver
-              freertos
-              nvs_flash
-              sdmmc
-              json
-              mbedtls
-              esp_timer
-              esp_wifi
-              fatfs
-              pthread
+              SRCS
+                  "main.cpp"
+                  "init.cpp"
+                  "wifi.cpp"
+                  "process.cpp"
+                  "model_loader.cpp"
+                  "deep_sort.cpp"
+                  "semantic_seg.cpp"
+                  "collision.cpp"
+                  "image_filters.cpp"
+              INCLUDE_DIRS
+                  "."
+                  "../components"
+                  "../include"
+              REQUIRES
+                  esp32-camera
+                  esp_http_server
+                  esp_https_ota
+                  driver
+                  freertos
+                  nvs_flash
+                  sdmmc
+                  json
+                  mbedtls
+                  esp_timer
+                  esp_wifi
+                  fatfs
+                  pthread
           )
-          ' > main/CMakeLists.txt
+          ' > firmware/main/CMakeLists.txt
 
-          # 创建一个简单的component.mk以满足旧构建系统需求
-          echo 'COMPONENT_ADD_INCLUDEDIRS := .' > main/component.mk
+          # 在项目的CMakeLists.txt中添加组件路径
+          echo '
+          cmake_minimum_required(VERSION 3.16)
+          set(CMAKE_C_STANDARD 99)
+          set(CMAKE_CXX_STANDARD 11)
+          set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-      # 修复源代码中的包含路径
-      - name: Fix include paths
-        run: |
-          # 替换源代码中的包含路径
-          find firmware/main -name "*.cpp" -exec sed -i 's/#include "tensorflow\/lite\//#include "..\/managed_components\/tflite-micro\/tensorflow\/lite\//g' {} \;
-          find firmware/main -name "*.cpp" -exec sed -i 's/#include "..\/include\//#include "..\/include\//g' {} \;
+          # 添加组件目录
+          set(EXTRA_COMPONENT_DIRS
+              ${CMAKE_CURRENT_SOURCE_DIR}/components
+          )
+
+          include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+          project(lodcp)
+          ' > firmware/CMakeLists.txt
 
       # 编译项目
       - name: Build project
         run: |
           source $HOME/esp/esp-idf/export.sh
           cd firmware
-          ls -la managed_components || echo "managed_components directory not found"
-          ls -la || echo "No files in current directory"
-          idf.py reconfigure
+
+          # 列出所有文件和目录，帮助调试
+          echo "固件目录结构:"
+          ls -la
+
+          echo "组件目录结构:"
+          ls -la components/
+
+          echo "主目录结构:"
+          ls -la main/
+
+          echo "包含目录结构:"
+          ls -la include/
+
+          # 运行构建
           idf.py build
 
-      # 保存构建产物和日志
+      # 保存构建日志
       - name: Save build logs
         if: always()
         run: |
+          mkdir -p /tmp/build_logs
+
           if [ -d firmware/build ]; then
-            echo "==== CMake Output ===="
-            if [ -f firmware/build/CMakeFiles/CMakeOutput.log ]; then
-              cat firmware/build/CMakeFiles/CMakeOutput.log
+            cp -r firmware/build/log /tmp/build_logs || echo "No build logs found"
+
+            if [ -f firmware/build/CMakeFiles/CMakeError.log ]; then
+              cp firmware/build/CMakeFiles/CMakeError.log /tmp/build_logs/
             fi
 
-            echo "==== Error Output ===="
-            if [ -d firmware/build/log ]; then
-              find firmware/build/log -type f -name "idf_py_stderr_output_*" -exec cat {} \;
+            if [ -f firmware/build/CMakeFiles/CMakeOutput.log ]; then
+              cp firmware/build/CMakeFiles/CMakeOutput.log /tmp/build_logs/
             fi
+
+            echo "Build logs saved to /tmp/build_logs"
           else
             echo "Build directory not found"
           fi
