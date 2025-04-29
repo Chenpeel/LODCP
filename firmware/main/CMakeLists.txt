@@ -24,7 +24,7 @@ idf_component_register(
         sdmmc
         json
         mbedtls
-        tflite-lib
+        tflite-micro
         esp_timer
         esp_wifi
         fatfs
