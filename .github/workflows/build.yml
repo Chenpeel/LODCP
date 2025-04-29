@@ -42,11 +42,23 @@ jobs:
           # 安装 ESP32-Camera
           idf.py add-dependency "espressif/esp32-camera^1.0.0"
 
-          # 安装 ESP-DL
-          idf.py add-dependency "espressif/esp-dl^1.3.0"
+          # 查看可用的ESP-DL版本
+          echo "查询可用的ESP-DL版本..."
+          cd managed_components || mkdir -p managed_components
+          git clone https://github.com/espressif/esp-dl.git
+          cd esp-dl
+          echo "使用直接克隆的ESP-DL仓库"
 
           # 安装 TFLite-Micro
-          idf.py add-dependency "espressif/esp-tflite-micro^1.0.0"
+          cd ../../
+          idf.py add-dependency "espressif/tflite-micro^1.0.0" || echo "TFLite-Micro添加失败，尝试直接克隆"
+
+          # 如果添加依赖失败，直接克隆
+          if [ ! -d managed_components/tflite-micro ]; then
+            cd managed_components || mkdir -p managed_components
+            git clone https://github.com/espressif/esp-tflite-micro.git tflite-micro
+            cd ..
+          fi
 
           # 创建一个修改过的main/CMakeLists.txt来避免找不到的组件
           echo '
@@ -63,7 +75,9 @@ jobs:
               "image_filters.cpp"
             INCLUDE_DIRS
               "."
-              "../components"
+              "../managed_components"
+              "../managed_components/esp-dl/include"
+              "../managed_components/tflite-micro/tensorflow/lite"
               "../include"
             REQUIRES
               esp32-camera
@@ -82,25 +96,39 @@ jobs:
           )
           ' > main/CMakeLists.txt
 
+          # 创建一个简单的component.mk以满足旧构建系统需求
+          echo 'COMPONENT_ADD_INCLUDEDIRS := .' > main/component.mk
+
+      # 修复源代码中的包含路径
+      - name: Fix include paths
+        run: |
+          # 替换源代码中的包含路径
+          find firmware/main -name "*.cpp" -exec sed -i 's/#include "tensorflow\/lite\//#include "..\/managed_components\/tflite-micro\/tensorflow\/lite\//g' {} \;
+          find firmware/main -name "*.cpp" -exec sed -i 's/#include "..\/include\//#include "..\/include\//g' {} \;
+
       # 编译项目
       - name: Build project
         run: |
           source $HOME/esp/esp-idf/export.sh
           cd firmware
+          ls -la managed_components || echo "managed_components directory not found"
+          ls -la || echo "No files in current directory"
+          idf.py reconfigure
           idf.py build
 
-      # 保存构建产物
-      - name: Save build directory
+      # 保存构建产物和日志
+      - name: Save build logs
         if: always()
         run: |
           if [ -d firmware/build ]; then
-            mkdir -p /tmp/firmware
-            cp -r firmware/build/* /tmp/firmware/
-            echo "Build artifacts saved to /tmp/firmware"
-            # 输出编译日志，帮助调试
-            if [ -f firmware/build/log/idf_py_stderr_output_* ]; then
-              echo "==== Compilation Errors ===="
-              cat firmware/build/log/idf_py_stderr_output_*
+            echo "==== CMake Output ===="
+            if [ -f firmware/build/CMakeFiles/CMakeOutput.log ]; then
+              cat firmware/build/CMakeFiles/CMakeOutput.log
+            fi
+
+            echo "==== Error Output ===="
+            if [ -d firmware/build/log ]; then
+              find firmware/build/log -type f -name "idf_py_stderr_output_*" -exec cat {} \;
             fi
           else
             echo "Build directory not found"
