@@ -34,27 +34,6 @@ jobs:
           echo "项目结构:"
           ls -la
 
-          # 确保firmware目录存在
-          if [ ! -d "firmware" ]; then
-            echo "Error: firmware directory not found!"
-            exit 1
-          fi
-
-          # 检查固件目录结构
-          echo "固件目录结构:"
-          ls -la firmware/
-
-          # 确保main目录存在
-          if [ ! -d "firmware/main" ]; then
-            echo "Error: firmware/main directory not found!"
-            exit 1
-          fi
-
-          # 检查CMakeLists.txt
-          if [ ! -f "firmware/main/CMakeLists.txt" ]; then
-            echo "警告: firmware/main/CMakeLists.txt not found!"
-          fi
-
       # 安装依赖并正确设置组件
       - name: Install dependencies
         run: |
@@ -73,7 +52,7 @@ jobs:
           git clone https://github.com/espressif/esp-dl.git
 
           echo "克隆 TFLite-Micro 组件..."
-          git clone --recursive https://github.com/espressif/esp-tflite-micro.git tflite-lib
+          git clone https://github.com/tensorflow/tflite-micro.git
 
           # 回到固件目录
           cd ../
@@ -90,67 +69,6 @@ jobs:
             echo "Error: firmware/main directory not found!"
             exit 1
           fi
-
-          # 检查并修复深度排序文件名不一致问题
-          if [ -f "firmware/main/deepsort.cpp" ] && [ ! -f "firmware/main/deep_sort.cpp" ]; then
-            echo "重命名 deepsort.cpp 到 deep_sort.cpp"
-            cp firmware/main/deepsort.cpp firmware/main/deep_sort.cpp
-          fi
-
-          if [ -f "firmware/include/deepsort.h" ] && [ ! -f "firmware/include/deep_sort.h" ]; then
-            echo "重命名 deepsort.h 到 deep_sort.h"
-            cp firmware/include/deepsort.h firmware/include/deep_sort.h
-          fi
-
-          # 更新 CMakeLists.txt 以使用我们的组件
-          echo '
-          idf_component_register(
-              SRCS
-                  "main.cpp"
-                  "init.cpp"
-                  "wifi.cpp"
-                  "process.cpp"
-                  "model_loader.cpp"
-                  "deep_sort.cpp"
-                  "semantic_seg.cpp"
-                  "collision.cpp"
-                  "image_filters.cpp"
-              INCLUDE_DIRS
-                  "."
-                  "../components"
-                  "../include"
-              REQUIRES
-                  esp32-camera
-                  esp_http_server
-                  esp_https_ota
-                  driver
-                  freertos
-                  nvs_flash
-                  sdmmc
-                  json
-                  mbedtls
-                  esp_timer
-                  esp_wifi
-                  fatfs
-                  pthread
-          )
-          ' > firmware/main/CMakeLists.txt
-
-          # 在项目的CMakeLists.txt中添加组件路径
-          echo '
-          cmake_minimum_required(VERSION 3.16)
-          set(CMAKE_C_STANDARD 99)
-          set(CMAKE_CXX_STANDARD 11)
-          set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-          # 添加组件目录
-          set(EXTRA_COMPONENT_DIRS
-              ${CMAKE_CURRENT_SOURCE_DIR}/components
-          )
-
-          include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-          project(lodcp)
-          ' > firmware/CMakeLists.txt
 
       # 编译项目
       - name: Build project
