@@ -101,8 +101,10 @@ jobs:
           ls -la include/
 
           # 运行构建
-          idf.py set-target esp32
-          idf.py defconfig
+          idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults" \
+          -DPARTITION_TABLE_CSV_PATH="partitions.csv" \
+          set-target esp32
+
           idf.py build
 
       # 保存构建日志
