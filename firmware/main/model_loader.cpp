@@ -9,11 +9,35 @@ static const char *TAG = "ModelLoader";
 ModelLoader g_detection_model(MODEL_DETECTION);
 ModelLoader g_segmentation_model(MODEL_SEGMENTATION);
 
-ModelLoader::ModelLoader(ModelType type) : model_type_(type) {
+ModelLoader::ModelLoader(ModelType type) : model_type_(type), resolver_() {
   tensor_arena_ = (uint8_t *)heap_caps_malloc(
       kTensorArenaSize, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (!tensor_arena_) {
     ESP_LOGE(TAG, "Failed to allocate memory for tensor arena");
+  }
+
+  // 在构造函数中根据模型类型添加操作
+  if (type == MODEL_DETECTION) {
+    // 添加目标检测模型需要的操作
+    resolver_.AddConv2D();
+    resolver_.AddDepthwiseConv2D();
+    resolver_.AddReshape();
+    resolver_.AddSoftmax();
+    resolver_.AddAveragePool2D();
+    resolver_.AddConcatenation();
+    resolver_.AddAdd();
+    resolver_.AddPad();
+    resolver_.AddTranspose();
+  } else if (type == MODEL_SEGMENTATION) {
+    // 添加语义分割模型需要的操作
+    resolver_.AddConv2D();
+    resolver_.AddDepthwiseConv2D();
+    resolver_.AddReshape();
+    resolver_.AddSoftmax();
+    resolver_.AddAdd();
+    resolver_.AddTranspose();
+    resolver_.AddResizeNearestNeighbor();
+    resolver_.AddConcatenation();
   }
 }
 
@@ -89,8 +113,9 @@ esp_err_t ModelLoader::init() {
       model_, resolver_, tensor_arena_, kTensorArenaSize, &error_reporter_);
 
   // 分配张量
-  if (interpreter_->AllocateTensors() != kTfLiteOk) {
-    ESP_LOGE(TAG, "Failed to allocate tensors");
+  TfLiteStatus allocate_status = interpreter_->AllocateTensors();
+  if (allocate_status != kTfLiteOk) {
+    ESP_LOGE(TAG, "Failed to allocate tensors: %d", allocate_status);
     return ESP_FAIL;
   }
 
@@ -98,18 +123,31 @@ esp_err_t ModelLoader::init() {
   input_tensor_ = interpreter_->input(0);
   output_tensor_ = interpreter_->output(0);
 
+  if (!input_tensor_ || !output_tensor_) {
+    ESP_LOGE(TAG, "Failed to get input or output tensor");
+    return ESP_FAIL;
+  }
+
   ESP_LOGI(TAG, "Model %s loaded successfully",
            model_type_ == MODEL_DETECTION ? "Detection" : "Segmentation");
-  ESP_LOGI(TAG, "Input shape: %d x %d x %d x %d", input_tensor_->dims->data[0],
-           input_tensor_->dims->data[1], input_tensor_->dims->data[2],
-           input_tensor_->dims->data[3]);
+
+  if (input_tensor_->dims->size >= 4) {
+    ESP_LOGI(TAG, "Input shape: %d x %d x %d x %d",
+             input_tensor_->dims->data[0], input_tensor_->dims->data[1],
+             input_tensor_->dims->data[2], input_tensor_->dims->data[3]);
+  } else {
+    ESP_LOGI(TAG, "Input shape dims: %d", input_tensor_->dims->size);
+  }
 
   if (output_tensor_->dims->size >= 4) {
     ESP_LOGI(TAG, "Output shape: %d x %d x %d x %d",
              output_tensor_->dims->data[0], output_tensor_->dims->data[1],
              output_tensor_->dims->data[2], output_tensor_->dims->data[3]);
+  } else if (output_tensor_->dims->size >= 2) {
+    ESP_LOGI(TAG, "Output shape: %d x %d", output_tensor_->dims->data[0],
+             output_tensor_->dims->data[1]);
   } else {
-    ESP_LOGI(TAG, "Output shape: %d", output_tensor_->dims->data[1]);
+    ESP_LOGI(TAG, "Output shape dims: %d", output_tensor_->dims->size);
   }
 
   return ESP_OK;
@@ -224,7 +262,6 @@ void ModelLoader::getInputDims(int &width, int &height, int &channels) {
     return;
   }
 
-  // 假设输入格式为 [1, height, width, channels]
   height = input_tensor_->dims->data[1];
   width = input_tensor_->dims->data[2];
   channels = input_tensor_->dims->data[3];

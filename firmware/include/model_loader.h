@@ -2,10 +2,10 @@
 #define MODEL_LOADER_H
 
 #include "esp_err.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/schema/schema_generated.h"
+#include "tflite-micro/tensorflow/lite/micro/micro_interpreter.h"
+#include "tflite-micro/tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tflite-micro/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
+#include "tflite-micro/tensorflow/lite/schema/schema_generated.h"
 
 // 模型文件路径
 #define DETECTION_MODEL_PATH "/sdcard/detect.tflite"
@@ -43,7 +43,7 @@ private:
   ModelType model_type_;
   const tflite::Model *model_ = nullptr;
   tflite::MicroErrorReporter error_reporter_;
-  tflite::AllOpsResolver resolver_;
+  tflite::MicroMutableOpResolver<10> resolver_; // 使用MicroMutableOpResolver
   tflite::MicroInterpreter *interpreter_ = nullptr;
 
   TfLiteTensor *input_tensor_ = nullptr;

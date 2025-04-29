@@ -2,9 +2,9 @@
 #ifndef INIT_H
 #define INIT_H
 
+#include "../include/wifi.h"
 #include "camera_config.h"
 #include "esp_err.h"
-
 // 初始化NVS
 esp_err_t init_nvs();
 
