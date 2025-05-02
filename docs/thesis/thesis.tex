@@ -1,0 +1,925 @@
+
+\documentclass[a4paper, UTF8]{ctexart}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{abstract}
+\usepackage{tocloft}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{unicode-math}
+\usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false]{biblatex}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{pifont}
+\usepackage{tikz}
+\usepackage{float}
+\usetikzlibrary{matrix,shapes,arrows,positioning,decorations.pathreplacing,fit, backgrounds, calc,shapes.geometric, arrows.meta}
+\usepackage{algorithm2e}
+\usepackage{algorithmic}
+\usetikzlibrary{positioning}
+% 设置页眉页脚
+\pagestyle{fancy}
+\fancyhf{} % 清除所有页眉页脚
+\fancyhead[C]{安徽理工大学毕业设计（论文）} % 页眉居中显示
+\fancyfoot[C]{\thepage} % 页码居中显示在页脚
+\setlength{\headheight}{12.64723pt}
+% 设置引用样式为上标
+\renewcommand{\cite}[1]{\textsuperscript{\supercite{#1}}}
+
+% 设置字体
+\setmainfont{Times New Roman}
+\setCJKmainfont{Songti SC}
+
+% 设置章节格式
+\usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+\newlist{circledlist}{enumerate}{1}
+\setlist[circledlist]{label=\ding{\numexpr171+\value{circledlisti}\relax}}
+% 参考文献文件
+\addbibresource{references.bib}
+
+
+\begin{document}
+
+% 标题页
+\begin{titlepage}
+\begin{center}
+\vspace*{1cm}
+\includegraphics[width=\textwidth]{figures/title.png}
+
+\vspace*{1cm}
+{\Huge \textbf{本科毕业设计说明书（论文）}}
+\vspace{1.5cm}
+
+
+{\Large \textbf{基于深度学习的车道障碍检测与碰撞预测方法研究}}
+{\Large \textbf{Research on Deep Learning-Based Lane Obstacle Detection and Collision Prediction Methodology}}
+\vspace{1.5cm}
+
+{\large
+\begin{tabular}{rl}
+学院（部）： & 计算机科学与工程学院 \\
+\\
+专业班级： & 计算机科学与技术21-4 \\
+\\
+学生姓名： & 陈亚辉 \\
+\\
+指导教师： & 郑苹讲师 \\
+\end{tabular}}
+\vfill
+\vspace{0.5cm}
+{\large 2025 年 4 月 30 日}
+\end{center}
+\end{titlepage}
+\thispagestyle{empty} % 标题页无页码和页眉
+
+% 中文摘要页
+\begin{center}
+\Large\textbf{摘要}
+\end{center}
+\vspace{2em}
+
+\setlength{\parindent}{2em} % 设置首行缩进
+近年来，尽管中国汽车产业发展迅速、智能驾驶技术不断革新，交通事故发生率仍然居高不下。传统道路障碍检测方法面临精度不足、计算复杂度高以及人工依赖性强等问题。针对这些挑战，本研究提出了一种基于深度学习的车道障碍物检测与碰撞预警系统，通过融合视觉感知与运动预测技术，有效提升了行车安全预警能力。
+
+在车道识别方面，本系统创新性地结合传统图像处理与Fast-SCNN深度学习模型，显著增强了系统在复杂光照和恶劣天气条件下的车道线识别鲁棒性。我们采用多项式曲线拟合技术对检测到的边缘点进行数学建模，实现了精确的车道线表示和预测。
+
+为满足嵌入式平台上的实时障碍物检测需求，本研究在平衡精度与计算资源的基础上，采用轻量级YOLOv5n模型，并通过知识蒸馏技术优化模型性能。具体而言，我们以YOLOv5s作为教师模型，并对蒸馏后的模型进行剪枝与量化，在提高检测精度的同时显著减少了资源占用，使其适用于ESP32等资源受限的嵌入式平台。
+
+针对多目标跟踪中常见的遮挡问题，本研究基于DeepSORT框架优化了跟踪算法，采用IoU度量机制改进了目标运动状态关联。系统通过并行处理架构同时执行目标检测和语义分割任务，并分析多帧目标运动轨迹与道路可行区域，构建了实时碰撞风险评估模型。实验结果表明，本方法在障碍物识别准确性、跟踪稳定性和碰撞预警时效性方面均表现出显著优势，特别是在计算资源受限的嵌入式环境中。
+
+
+\vspace{2em}
+\noindent\textbf{关键词：Fast-SCNN; YOLOv5; DeepSORT; IoU度量; 车道障碍检测; 碰撞预测}
+\thispagestyle{fancy} % 中文摘要页使用自定义页眉页脚
+
+\clearpage
+
+% 英文摘要页
+\begin{center}
+\Large\textbf{ABSTRACT}
+\end{center}
+\vspace{2em}
+
+\setlength{\parindent}{2em} % 设置首行缩进
+In recent years, despite the rapid development of China's automotive industry and continuous innovation in intelligent driving technology, the incidence of traffic accidents remains high. Traditional road obstacle detection methods face challenges such as insufficient accuracy, high computational complexity, and strong human dependency. Addressing these challenges, this research proposes a deep learning-based lane obstacle detection and collision warning system, effectively enhancing driving safety through the fusion of visual perception and motion prediction technologies.
+
+In terms of lane recognition, this system innovatively combines traditional image processing with the Fast-SCNN deep learning model, significantly enhancing the robustness of lane line recognition under complex lighting and adverse weather conditions. We employ polynomial curve fitting techniques to mathematically model detected edge points, achieving precise lane line representation and prediction.
+
+To meet the requirements for real-time obstacle detection on embedded platforms, this research adopts the lightweight YOLOv5n model while balancing accuracy and computational resources, and optimizes model performance through knowledge distillation technology. Specifically, we use YOLOv5s as the teacher model and perform pruning and quantization on the distilled model, significantly reducing resource consumption while improving detection accuracy, making it suitable for resource-constrained embedded platforms such as ESP32.
+
+For the common occlusion problems in multi-object tracking, this research optimizes the tracking algorithm based on the DeepSORT framework, improving object motion state association using IoU measurement mechanisms. The system simultaneously executes object detection and semantic segmentation tasks through a parallel processing architecture, and analyzes multi-frame object motion trajectories and road feasible regions to construct a real-time collision risk assessment model. Experimental results show that this method demonstrates significant advantages in obstacle recognition accuracy, tracking stability, and collision warning timeliness, especially in embedded environments with limited computational resources.
+
+
+\vspace{2em}
+\noindent\textbf{Keywords: Fast-SCNN; YOLOv5; DeepSORT; IoU Measurement; Lane Obstacle Detection; Collision Prediction}
+
+\thispagestyle{fancy} % 英文摘要页使用自定义页眉页脚
+
+\clearpage
+% 目录
+\tableofcontents
+\thispagestyle{fancy} % 目录页使用自定义页眉页脚
+\clearpage
+
+% 正文内容开始
+\section{绪论}
+% 第一章的图表编号格式
+\renewcommand{\thefigure}{1-\arabic{figure}}
+\renewcommand{\figurename}{图}
+\setcounter{figure}{0} % 重置图表计数器
+
+\subsection{研究背景及意义}
+
+自动驾驶技术正在引发全球汽车产业的革命性变革。近年来，我国汽车产业保持高速发展态势。据《2023年汽车工业经济运行报告》显示\cite{auto2023}，中国已连续十五年蝉联全球汽车销量冠军。公安部统计数据显示，截至2023年我国汽车保有量达3.36亿辆，驾驶员数量达4.86亿人。持续扩大的市场规模伴随显著的安全挑战——道路交通事故发生概率也相应上升，这不仅威胁人民生命安全，还造成巨大经济损失。世界卫生组织（World Health Organization, WHO）《2023年道路安全现状报告》\cite{who2023}指出，2010年以来全球年均道路交通事故致死135万人，致伤2000万至5000万人，其中94\%的事故与人为因素直接相关，导致大量人员伤残。此类事故造成的经济损失约占多数国家国内生产总值（Gross Domestic Product, GDP）的3\%。
+
+传统驾驶存在三重安全隐患：感知局限、反应迟滞和行为不可控。针对此问题，《自然-通讯》杂志基于2016-2022年间2100辆配备高级自动驾驶系统的车辆与35133辆人工驾驶车辆的交通事故数据展开研究\cite{nature2022}。该研究表明：自动驾驶车辆在多数场景下的安全性优于人工驾驶，其追尾和侧面碰撞风险分别仅为人工驾驶的45.7\%和17.1\%，尤其在车道保持和自适应车距调节方面表现突出。
+
+智能辅助驾驶技术通过多传感器融合与车路协同系统实现全方位环境感知，可有效降低事故发生率。Waymo公司2020年发布的《公共道路安全性能数据》\cite{waymo2020}显示，其自动驾驶车辆在981万公里的实测里程中仅发生18起轻微事故，其中44.4\%源于其他交通参与者的违规行为。这验证了智能系统在复杂交通环境中的可靠性。
+
+车道障碍物可分为人为与自然两类：前者包含行人、车辆等具有随机移动特征的动态障碍，后者指自然灾害引发的静态障碍。二者均可能引发碰撞事故，造成人员伤亡与财产损失。因此，实时检测与风险评估成为保障交通安全的关键。
+
+随着机器视觉与深度学习技术的突破，基于视频流的智能识别系统已日趋成熟。此类系统可对交通监控视频进行多目标定位与行为分析，通过语义分割确定道路边界，结合目标跟踪算法实现动态障碍物轨迹预测。本文提出一种基于视频序列的车道障碍物检测与碰撞概率预测方法，其技术流程包括： 1. 视频图像序列采集 2. 道路特征提取与语义分割 3. 基于深度学习的目标检测 4. 复杂场景多目标跟踪 5. 碰撞概率建模与分级预警。该系统采用二级预警机制，在保证识别效率（帧率≥30fps）的同时，将误报率控制在5\%以下。通过算法优化，部署成本降低60\%，可适配各类低成本车载安全装置。
+
+\subsection{国内外研究进展}
+
+早期车道线检测研究主要依赖颜色、边缘等基础图像特征。这些传统方法虽然速度较快，但在车辆密集、雨雪天气或光线不足等复杂场景下，其抗干扰能力和鲁棒性较差，难以满足辅助驾驶系统的要求。近年来，深度神经网络和大规模道路数据集的应用为道路分割提供了新的解决方案。
+
+基于像素级的语义图像分割技术将图像中的每个像素分类为特定实例，每个实例对应一个类别\cite{asgari2021deep}。在道路分割中，可以通过二值分割提取车道线轮廓，再应用聚类算法将其分组以区分不同车道；或者直接预测每个车道线的分割图，并使用曲线拟合确定更精确的几何形状。考虑到车道线的细长特性，一些研究将这种特征融入神经网络架构中，如SCNN\cite{parashar2017scnn}采用逐切片的空间卷积策略，增强特征图行列间的像素信息交流。
+
+在智能辅助驾驶这一要求高实时性的领域，高参数大模型带来的时间成本不容忽视。为提升推理速度，研究者开发了多种优化策略，包括剪枝\cite{zhu2017prune,park2022prune,huang2018learning}、量化\cite{goodman1975robust, fischer1986pyramid, montestruque2007static}，知识蒸馏\cite{hou2019learning,hou2020inter,park2019relational}和轻量级分割网络\cite{paszke2016enet}等。国内车道检测研究主要包括：通过超锚方式解决车道线复杂、背景紊乱问题，从车道线的结构和稀疏特性出发，解决复杂情景下的锯齿、断裂问题\cite{1025006135.nh}；以及通过高分辨率街景语义分割网络对街道进行精细化建模，设计多注意力模块以提高精度和模型效率\cite{1025306207.nh}。
+
+目前障碍物检测主要分为接触式和非接触式两类。接触式检测主要基于传感器技术\cite{discant2007sensors}，通过分析道路及周围环境形变信息，判断障碍物存在并给出预警；非接触式检测则主要依靠机器视觉技术\cite{badrloo2022image}，通过高速相机、图像处理算法和深度神经网络实现道路障碍检测。国内研究主要包括：ViBe\cite{barnich2010vibe}算法的运动目标检测\cite{SJSJ202406024}，该算法通过随机背景替换值调整模型，实现基于背景消除的实时运动目标检测；此外，研究者还提出将ViBe与光流法、帧差法及深度学习相结合的新型目标检测算法\cite{SCQX20250311001}，对交通场景中的复杂目标展现出较好的效果。
+
+在高速公路车辆多目标跟踪领域，多特征融合已成为提高跟踪性能的重要研究方向。基于深度特征和颜色直方图融合的车辆多目标跟踪算法\cite{张雷2016基于颜色和边缘直方图的多目标跟踪}，通过综合利用深度学习提取的语义特征和传统视觉特征，在复杂场景下展现出良好的鲁棒性和稳定性。
+
+多特征信息融合方法对运动目标进行细粒度特征描述和相似度匹配，不仅获取了更丰富的视觉信息，还有效解决了相似目标区分难、遮挡处理复杂等问题。这类方法能够适应不同光照和视角变化，为复杂场景下的跟踪提供了新思路。在跟踪算法选择方面，基于核相关滤波(Kernelized Correlation Filter, KFC)和DeepSORT级联的跟踪算法\cite{wang2020mtcnn}，充分结合了KCF的计算效率和DeepSORT的外观建模能力，在保证实时性的同时提高了跟踪精度。
+
+\subsection{本文组织架构}
+
+本文构建了一个从环境感知到碰撞预警的完整技术体系，通过多技术融合与算法创新满足智能驾驶环境感知系统的核心需求。研究采用理论构建、方法改进和系统验证的递进式框架，着力解决复杂场景下的实时性与鲁棒性问题。
+
+第一章从智能驾驶技术发展的产业背景出发，分析当前环境感知系统面临的感知盲区、检测误差等关键挑战。通过对比国内外研究现状，揭示传统图像处理方法与深度学习模型在实时性和泛化性上的固有矛盾，提出融合两类技术优势的混合架构作为突破口，并确立全文的技术路线。
+
+第二章系统阐述支撑全文的技术理论基础。首先解析传统图像增强与形态学运算的数学原理，然后探讨卷积神经网络从浅层特征提取到深度语义理解的演进规律。重点分析FastSCNN网络的双分支架构及其轻量化特性，推导DeepSORT算法中运动状态与外观特征的动态关联模型，最后建立基于时空约束的碰撞预测理论框架。
+
+第三章针对复杂光照下的车道识别难题提出解决方案。融合Retinex理论与自适应Gamma校正的增强算法改善低照度环境下的图像质量。采用改进的FastSCNN网络实现像素级语义分割，结合动态权重加载策略增强对模糊车道线的识别能力。基于道路几何特征建立预行区域划分标准，为碰撞预警提供空间约束依据。
+
+第四章优化障碍物检测与跟踪的实时性能。构建包含多种天气条件的增强数据集，通过通道剪枝与量化技术实现检测模型的轻量化。改进DeepSORT的特征匹配机制，设计面向边缘设备的部署方案，提升多目标跟踪的连续性，同时保证检测精度和降低系统时延。
+
+第五章构建多层次碰撞预警系统。融合运动学模型与序列预测算法实现目标轨迹的精准预测，提出多维时空风险评估方法，建立考虑相对运动状态的威胁评估模型。设计分级预警决策机制，通过硬件加速确保系统实时响应。
+
+第六章总结研究在环境感知算法改进和计算效率优化方面的突破与进展，分析当前方法在极端场景适应性和多源信息融合方面的局限，从动态场景重建、协同感知等维度展望未来研究方向。本文结构如图\ref{fig:arch}所示。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{figures/chapter1/fig1-1.png}
+\caption{系统架构图}
+\label{fig:arch}
+\end{figure}
+
+\section{相关理论基础}
+\renewcommand{\thefigure}{2-\arabic{figure}}
+\renewcommand{\figurename}{图}
+\setcounter{figure}{0} % 重置图表计数器
+\setcounter{equation}{0} % 重置公式计数器
+
+\subsection{图像处理基础}
+
+作为辅助驾驶感知系统的前端预处理模块，图像处理技术在从原始传感器数据中提取有效信息方面发挥着关键作用。本节介绍的去噪、形态学操作等基础技术构成了环境感知的底层技术基础，其处理质量直接影响后续深度学习模型的性能上限。特别是在复杂交通场景中，路面反光、雨雾干扰等噪声的有效抑制能力，决定了车道线识别、障碍物检测等高级任务的可靠性。
+
+\subsubsection{传统图像增强技术}
+
+\paragraph{去噪处理}
+
+数字图像在采集和传输过程中容易受到设备固有噪声、环境干扰等因素的影响，常见的噪声类型包括高斯噪声、椒盐噪声和泊松噪声等。去噪算法的核心在于平衡噪声抑制与图像细节保留，主要方法包括：
+
+\begin{enumerate}
+\item \textbf{中值滤波}：非线性滤波方法，通过滑动窗口内像素值的中位数替代中心像素。其优势在于有效抑制脉冲噪声的同时保持边缘清晰度，计算复杂度为$O(n^2)$，适用于中低分辨率图像处理。数学表达如式(1)：
+
+\begin{equation}
+M(x,y) = \text{median}\{ f(i,j)|i \in \lbrack x - k,x + k\rbrack,j \in \lbrack y - k,y + k\rbrack\}
+\end{equation}
+
+其中窗口尺寸$k$需根据噪声强度与图像分辨率进行参数调优。在车辆前方障碍物检测中，$3 \times 3$窗口在保持实时性的同时可有效去除雨滴等干扰，如图\ref{fig:medium_filter}所示。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{figures/chapter2/medium_filtered.jpg}
+\begin{center}
+(a) 噪声图像 \hspace{4cm} (b) 中值滤波
+\end{center}
+\caption{中值滤波图}
+\label{fig:medium_filter}
+\end{figure}
+
+\item \textbf{高斯滤波}：线性平滑方法，采用高斯核函数进行加权平均，特别适合处理符合正态分布的噪声。二维高斯函数表达式为：
+
+\begin{equation}
+G(x,y) = \frac{1}{2\pi\sigma^2}e^{-\frac{x^2+y^2}{2\sigma^2}}
+\end{equation}
+
+标准差$\sigma$决定平滑强度。在夜间驾驶场景中，$\sigma=1.8$可有效平衡噪声抑制与边缘保留，如图\ref{fig:gauss_filtered}。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{figures/chapter2/gauss_filtered.jpg}
+\begin{center}
+(a) 噪声图像 \hspace{3cm} (b) 高斯滤波
+\end{center}
+\caption{高斯滤波图}
+\label{fig:gauss_filtered}
+\end{figure}
+
+\item \textbf{双边滤波}：结合空间域和像素值域的非线性滤波方法，能够在平滑图像的同时保持边缘信息：
+
+\begin{equation}
+BF[I]_p = \frac{1}{W_p}\sum_{q \in S}G_{\sigma_s}(||p-q||)G_{\sigma_r}(|I_p-I_q|)I_q
+\end{equation}
+
+其中，$G_{\sigma_s}$为空间核，$G_{\sigma_r}$为值域核，适用于需要保留清晰边界的场景，如车道线检测。
+
+\item \textbf{各向异性扩散滤波}：基于偏微分方程的自适应滤波方法，能够根据局部梯度调整平滑强度，公式如下：
+
+\begin{equation}
+\frac{\partial I}{\partial t} = \text{div}(c(|\nabla I|)\nabla I)
+\end{equation}
+
+其中$c(\cdot)$为扩散系数，在边缘处减小扩散以保持结构特征，效果如图\ref{fig:ani_diffusion}所示。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{figures/chapter2/ani_diffusion.png}
+\begin{center}
+(a) 噪声图像 \hspace{3cm} (b) 各向异性扩散滤波
+\end{center}
+\caption{各向异性扩散滤波图}
+\label{fig:ani_diffusion}
+\end{figure}
+
+\end{enumerate}
+
+在实际车载系统开发中，需根据传感器特性和环境条件选择适配的滤波策略：CMOS相机受限于传感器特性易产生椒盐噪声，多采用中值滤波预处理；而在低光照条件下，高斯滤波结合亮度自适应阈值可提升夜间视觉效果；对于需要实时处理的场景，可采用积分图技术加速均值滤波，将复杂度降至$O(1)$。
+
+\subsubsection{形态学运算与边缘检测}
+
+\paragraph{形态学处理}
+
+形态学处理通过结构化元素操作改变目标区域的拓扑结构，在车道标记和障碍物分割中具有重要应用：
+
+\begin{enumerate}
+\item \textbf{腐蚀运算}：
+
+\begin{equation}
+(A \ominus B)(i,j) = \min_{(x,y) \in B}\{ A(i + x,j + y)\}
+\end{equation}
+
+可消除细小噪点但导致目标收缩，在车道线检测中用于分离粘连标记和过滤小面积干扰物。使用$3 \times 3$方形结构元素可去除大部分的环境噪点。
+
+\item \textbf{膨胀运算}：
+
+\begin{equation}
+(A \oplus B)(i,j) = \max_{(x,y) \in B}\{ A(i + x,j + y)\}
+\end{equation}
+
+用于填补目标区域空洞，增强障碍物轮廓连续性。在车道线重构中，使用线状结构元素可有效连接断裂的标线段。
+
+\item \textbf{开运算与闭运算}：
+
+\begin{equation}
+A \circ B = (A \ominus B) \oplus B
+\end{equation}
+\begin{equation}
+A \bullet B = (A \oplus B) \ominus B
+\end{equation}
+
+开运算可去除传感器数据中的孤立噪声，闭运算适用于修补检测盲区。
+
+\item \textbf{顶帽变换与底帽变换}：
+
+\begin{equation}
+\text{TopHat}(A) = A - (A \circ B)
+\end{equation}
+\begin{equation}
+\text{BlackHat}(A) = (A \bullet B) - A
+\end{equation}
+
+顶帽变换用于提取比背景亮的细小目标，如白色车道线；底帽变换则用于高精度情形下检测黑色物体，如沥青路面上的裂缝。
+\end{enumerate}
+
+\paragraph{边缘检测}
+
+边缘检测作为自动驾驶环境感知的核心技术，能够快速识别场景中的结构特征：
+
+\begin{enumerate}
+\item \textbf{Canny算子}：通过高斯平滑、梯度计算、非极大值抑制和双阈值检测四步实现，在复杂路况中可保持连续边缘特征。处理流程为：
+
+\begin{itemize}
+\item 高斯滤波去除噪声
+\item 使用Sobel算子计算梯度幅值和方向
+\item 非极大值抑制细化边缘
+\item 双阈值法确定边缘连接性
+\end{itemize}
+
+实验表明，在低阈值$0.1$和高阈值$0.3$的设置下，对车道线的检测准确率达$92.3\%$。
+
+\item \textbf{Sobel算子}：基于一阶导数的梯度算子，使用分离卷积核加速计算：
+
+\begin{equation}
+G_x = \begin{bmatrix} -1 & 0 & +1 \\ -2 & 0 & +2 \\ -1 & 0 & +1 \end{bmatrix} * A
+\end{equation}
+\begin{equation}
+G_y = \begin{bmatrix} -1 & -2 & -1 \\ 0 & 0 & 0 \\ +1 & +2 & +1 \end{bmatrix} * A
+\end{equation}
+\begin{equation}
+G = \sqrt{G_x^2 + G_y^2}
+\end{equation}
+
+
+
+\item \textbf{拉普拉斯算子}：基于二阶导数的边缘检测方法：
+
+\begin{equation}
+\nabla^2 f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2}
+\end{equation}
+
+常用卷积核为：
+
+\begin{equation}
+\begin{bmatrix} 0 & 1 & 0 \\ 1 & -4 & 1 \\ 0 & 1 & 0 \end{bmatrix} \text{ 或 } \begin{bmatrix} 1 & 1 & 1 \\ 1 & -8 & 1 \\ 1 & 1 & 1 \end{bmatrix}
+\end{equation}
+
+对噪声敏感但能检测到闭合轮廓，通常与高斯滤波组合使用（LoG算子）。
+
+\item \textbf{Gabor滤波器}：方向敏感的纹理分析工具，可以有针对性地增强特定方向的边缘特征：
+
+\begin{equation}
+g(x,y;\lambda,\theta,\psi,\sigma,\gamma) = \exp\left(-\frac{x'^2+\gamma^2y'^2}{2\sigma^2}\right)\cos\left(2\pi\frac{x'}{\lambda}+\psi\right)
+\end{equation}
+
+其中$x' = x\cos\theta + y\sin\theta$，$y' = -x\sin\theta + y\cos\theta$
+
+在检测不同角度的车道线时，通过调整$\theta$参数可实现多方向特征提取，提高检测鲁棒性。
+
+\item \textbf{多项式曲线拟合}：在获取边缘点后，通过最小二乘法拟合车道线数学模型：
+
+\begin{equation}
+y = a_0 + a_1x + a_2x^2 + a_3x^3
+\end{equation}
+
+$3$次多项式模型可有效描述弯道曲率，为车道偏离预警提供数学基础如图\ref{fig:polynomial_fit}所示。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{figures/chapter2/polynomial_fit.png}
+\begin{center}
+(a) 原始图像 \hspace{3cm} (b) 多项式拟合
+\end{center}
+\caption{多项式拟合车道线}
+\label{fig:polynomial_fit}
+\end{figure}
+\end{enumerate}
+
+
+
+\subsection{语义分割技术}
+
+作为环境感知的核心输出，语义分割质量直接决定路径规划的安全性边界。传统图像处理方法虽能有效提取几何特征，但在复杂场景理解方面存在天然局限。随着智能驾驶系统对环境感知精度和鲁棒性需求的提升，基于深度学习的语义分割技术凭借其强大的特征提取和场景理解能力，逐渐成为道路环境感知的核心技术。
+
+语义分割技术通过为图像中的每个像素分配类别标签，实现了从像素级别对场景的精确理解。这种精细化的场景解析使自动驾驶系统能够准确区分道路、车道线、行人、车辆等关键元素，为后续的路径规划和决策提供可靠的输入。与传统方法相比，深度学习语义分割能够适应各种复杂场景，如光照变化、天气条件恶劣、道路标记模糊等，显著提升了系统的环境适应能力。
+
+在实际部署中，我们需要在分割精度与计算效率间取得平衡。传统的语义分割网络如FCN、U-Net、DeepLab等虽然在分割精度上表现优异，但计算开销较大，难以满足车载系统的实时性要求。针对这一挑战，轻量化分割网络应运而生，其中Fast-SCNN作为一种专为实时应用设计的轻量级分割网络\cite{poudel2019fast}，在保证分割质量的同时显著降低了计算复杂度，特别适合于资源受限的车载环境。
+
+\subsubsection{FastSCNN}
+
+FastSCNN (Fast Semantic Conditioning Neural Network) 是一种专为边缘设备设计的实时语义分割架构，其核心创新在于提出双路径（two-branch）设计范式，实现高效特征提取与上下文信息捕获的平衡。与传统全卷积网络（FCN）依赖深层次的编码器-解码器结构不同，FastSCNN通过并行的信息处理流显著降低计算量，同时保持强大的分割性能。其数学模型表示为：
+
+\begin{equation}
+\label{eq:fastscnn}
+\left\{ \begin{array}{ll}
+F_{\text{detail}} = \Psi_{\text{HR}}(I) & \text{(高分辨率细节流)} \\
+F_{\text{context}} = \Phi_{\text{LR}}(I) & \text{(低分辨率语义流)} \\
+F_{\text{output}} = \Gamma(F_{\text{detail}} \otimes F_{\text{context}})
+\end{array} \right.
+\end{equation}
+
+其中$\otimes$表示特征融合算子，$\Gamma$为解码器函数。该架构设计思想源于观察到语义分割任务中存在的矛盾需求：需要足够大的感受野以获取上下文信息，同时又需要保留高分辨率特征以精确定位边界。FastSCNN通过学习下采样（Learned Downsampling）模块快速降低空间分辨率，在低分辨率分支中提取丰富语义信息，再通过全局特征提取器获取上下文表示，最终与高分辨率特征融合，恢复边缘细节。
+
+
+
+\subsubsection{多尺度特征融合策略}
+
+车道线检测面临的主要挑战是细长结构特征的提取和保持，我们构建了跨尺度特征交互的微分方程模型，通过自适应特征传递路径实现不同分辨率信息的有效融合：
+
+\begin{equation}
+\label{eq:routing}
+r_{ij} = \frac{exp(s_{ij})}{\sum_{k}^{}\exp(s_{ik})},\quad s_{ij} = \langle W_{q}f_{i},W_{k}f_{j}\rangle
+\end{equation}
+其中$r_{ij}$表示特征图$i$与特征图$j$之间的路由强度，$W_q$和$W_k$分别为查询和键值变换矩阵，$\langle\cdot,\cdot\rangle$表示内积操作。该机制使网络能够根据输入图像的复杂度自适应地调整信息流，对于简单场景保持高效处理，而对于复杂场景则激活更深层的特征交互。
+
+此外，采用基于类别加权的损失函数，增强模型对安全关键区域的识别能力，这种权重设置反映了道路场景中非道路区域的安全优先级，使模型在训练过程中更关注这些潜在风险区域的准确分割。
+
+\subsubsection{传统方法与深度学习协同机制}
+
+为克服单一方法的局限性，建立了传统计算机视觉方法与深度学习模型相结合的混合式分割框架：
+
+\begin{equation}
+\label{eq:hybrid}
+\widehat{M} = \underset{深度学习}{\underbrace{\mathcal{N}_{DL}(I)}} \oplus \underset{传统方法}{\underbrace{\mathcal{T(}I)}}
+\end{equation}
+
+这种协同机制为系统带来三重优势：首先，传统边缘检测方法提供了可解释的几何约束，对FastSCNN输出进行校正；其次，形态学操作（如闭运算）有效填补了深度学习模型在细节区域可能产生的空洞；最后，通过熵阈值判断，系统能够智能切换至最可靠的处理结果，实现"有理有据"的决策过程。在实际部署中，多项式曲线拟合模块对边缘检测结果进行数学建模。
+
+这种"白盒+黑盒"的混合架构体现了本研究的核心方法论——在数据驱动的智能模型中注入物理可解释性，使其既保有深度学习的抽象能力，又具备传统算法的稳定内核。
+
+\subsection{目标检测及目标跟踪理论}
+
+
+语义分割为环境提供了像素级的理解，而目标检测则进一步实现了对场景中独立实体的识别与定位。在智能驾驶场景中，准确检测和跟踪道路上的各类移动障碍物是避免碰撞的前提。
+现代目标检测技术已由早期的传统特征提取方法（如HOG、SIFT等）发展为基于深度学习的端到端解决方案，大幅提升了检测精度和鲁棒性。
+
+目标跟踪作为智能驾驶感知系统的关键环节，承担着将离散检测结果关联为连续时空轨迹的核心任务。
+在复杂交通场景中，遮挡、相似外观目标、光照变化等因素使得稳定跟踪面临巨大挑战。本研究选择DeepSORT作为基础框架，通过多项创新设计增强其在车载环境中的鲁棒性。
+
+作为感知系统的纵深防线，目标检测与跟踪系统不仅需要精准识别各类交通实体，还需要预测它们的运动状态与意图。
+这种时空维度的理解为后续的碰撞风险评估提供了必要基础。
+本节将首先介绍YOLOv5目标检测算法的理论框架，然后详细阐述DeepSORT多目标跟踪系统的核心机制，最后探讨针对车载环境的优化策略。
+
+\subsubsection{目标检测算法YOLOv5}
+
+作为实时目标检测领域的里程碑式算法，YOLO (You Only Look Once) 系列通过单阶段端到端的检测范式重新定义了计算机视觉任务的效率标准。
+YOLOv5作为该系列的重要迭代，在保持实时性的同时显著提升了检测精度，特别适合计算资源受限的车载环境。
+
+\paragraph{理论基础与架构演进}
+
+YOLOv5的核心理论基础建立在单阶段检测器的创新模型上，其通过将目标检测问题转化为回归问题，实现了端到端的推理过程。
+与两阶段检测器（如R-CNN系列）不同，YOLOv5直接从输入图像预测边界框坐标和类别概率，避免了候选区域生成和二次分类的计算开销。其理论框架可表述为：
+
+\begin{equation}
+f(I) \mapsto \{(b_i, c_i, p_i) | i \in [1, N]\}
+\end{equation}
+
+其中$I$为输入图像，$b_i$为第$i$个预测框的坐标参数$[x, y, w, h]$，$c_i$为类别，$p_i$为置信度。
+
+YOLOv5架构引入多项关键创新，包括CSP结构、PANet特征融合、Focus模块和自适应锚框计算。其中，CSP模块通过跨阶段局部连接优化梯度流动，可表示为：
+
+\begin{equation}
+Y = Concat(Conv_{1 \times 1}(X_1), BottleNeck(X_2))
+\end{equation}
+
+\paragraph{多尺度检测机制}
+
+YOLOv5针对交通场景中远近目标共存的特点，设计了三级检测头结构，实现全尺度目标的有效捕获：
+
+\begin{equation}
+P = \{P_l, P_m, P_s\}
+\end{equation}
+
+其中$P_l$、$P_m$、$P_s$分别对应大、中、小三种尺度的特征图，分别负责检测近、中、远距离目标。通过特征金字塔网络（FPN）和路径聚合网络（PAN）的双向连接，实现了自顶向下和自底向上的信息流动：
+
+\begin{equation}
+\begin{aligned}
+P_l &= Conv(Backbone_{stage5}) \\
+P_m &= Conv(Upsample(P_l) \oplus Backbone_{stage4}) \\
+P_s &= Conv(Upsample(P_m) \oplus Backbone_{stage3})
+\end{aligned}
+\end{equation}
+
+这种双向特征融合机制显著增强了模型对不同尺度目标的检测能力，在车载环境中能够同时精确识别远处的行人和近处的车辆。
+
+\paragraph{模型系列与轻量化设计}
+
+YOLOv5提供了不同复杂度的模型变体（YOLOv5n/s/m/l/x），但无论哪种模型，其Backbone，Neck，Output都是一致的，区别在于模型深度和宽度设置。如图\ref{fig:yolov5-comparison}所示。
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=1\textwidth]{figures/chapter2/yolov5.png}
+\caption{YOLOv5模型在COCO数据集测试结果}
+\label{fig:yolov5-comparison}
+\end{figure}
+
+各个尺度的预训练参数如表\ref{tab:yolov5-params}所示。
+\begin{table}[htbp]
+\centering
+\caption{YOLOv5模型系列参数对比}
+\label{tab:yolov5-params}
+\begin{tabular}{lccccc}
+\hline
+\textbf{模型} & \textbf{参数量} & \textbf{计算量(GFLOPs)} & \textbf{mAP@0.5} & \textbf{推理速度(FPS)} \\
+\hline
+YOLOv5n & 1.9M & 4.5 & 45.7\% & 260 \\
+YOLOv5s & 7.2M & 16.5 & 56.8\% & 220 \\
+YOLOv5m & 21.2M & 48.0 & 64.1\% & 150 \\
+YOLOv5l & 46.5M & 109.1 & 67.3\% & 95 \\
+YOLOv5x & 86.7M & 205.7 & 68.9\% & 65 \\
+\hline
+\end{tabular}
+\end{table}
+
+其中YOLOv5n（nano）专为边缘计算设备设计，通过减少网络深度和宽度显著降低了计算开销。其轻量化策略包括深度与宽度动态调整、Group Convolution、SiLU激活函数优化以及知识蒸馏与量化技术。
+本研究采用YOLOv5n为基础，结合车载场景的特点进行了针对性优化，包括类别优先级差异化、注意力增强模块和多帧时序融合等技术。
+
+另外使用了YOLOv5s模型作为蒸馏的教师模型，对YOLOv5n低参数模型进行优化，有效提高了对车载环境下障碍物的检测能力，同时降低了部署于边缘的资源消耗。
+\paragraph{损失函数优化}
+
+作为检测性能的关键驱动因素，采用EIoU（Efficient Intersection over Union）损失函数改进边界框回归精度。针对传统IoU度量对边界框尺度不敏感的问题，EIoU通过引入中心点距离惩罚项和宽高差异补偿机制，构建了更符合目标检测任务特性的回归目标：
+
+\begin{equation}
+\mathcal{L}_{EIoU} = 1 - IoU + \frac{\rho^2(b_{pred},b_{gt})}{c^2} + \frac{\rho^2(w_{pred},w_{gt}) + \rho^2(h_{pred},h_{gt})}{c_w^2 + c_h^2}
+\end{equation}
+
+其中$\rho(\cdot)$表示欧氏距离，$c$为最小包围框对角线长度，$c_w$、$c_h$为包围框宽高。与CIoU相比，EIoU解耦了宽高方向的梯度更新，使网络能够更精确地学习目标几何特征。
+
+
+
+\subsubsection{目标跟踪算法DeepSORT}
+
+DeepSORT（Deep Simple Online and Realtime Tracking）是一种高效的多目标跟踪算法\cite{wojke2017simple}，它通过在SORT基础上引入深度学习特征提取模块，显著提高了复杂场景下的跟踪性能。该算法特别适合处理车辆遮挡、目标密集等智能驾驶中的常见挑战。
+
+DeepSORT的系统架构如图\ref{fig:deepsort}所示，主要包含四个核心组件：检测关联、卡尔曼滤波、外观特征提取和轨迹管理。这种模块化设计使其在保持高精度的同时，保证了实时处理能力。
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+node distance=4mm,
+module/.style={rectangle, draw=blue!50, fill=blue!10, thick, minimum width=15mm, minimum height=3mm, align=center, font=\small},
+decision/.style={diamond, draw=green!50, fill=green!10, thick, aspect=2, align=center, font=\small},
+data/.style={ellipse, draw=red!50, fill=red!10, thick, align=center, font=\small},
+arrow/.style={->, >=stealth, thick}
+]
+
+% 节点定义
+\node[data] (input) {检测框序列$D_t=\{d_1,\ldots,d_n\}$};
+\node[module, below=of input] (kf_predict) {卡尔曼滤波预测\\$\mathbf{x}_k = \mathbf{F}\mathbf{x}_{k-1}$};
+\node[decision, below=of kf_predict] (association) {级联匹配\\$\min\sum C_{i,j}\phi(i,j)$};
+\node[module, left=of association, xshift=-0.5mm] (appearance) {外观特征提取\\CNN模型};
+\node[module, right=of association, xshift=0.5mm] (motion) {运动特征计算\\马氏距离};
+\node[decision, below=of association] (unmatched) {未匹配\\检测/轨迹};
+\node[module, below left=of unmatched, xshift=0.5mm] (new_track) {创建新轨迹\\$T_{init}$};
+\node[module, below right=of unmatched, xshift=0.5mm] (delete_track) {删除旧轨迹\\$Age>T_{age}$};
+\node[module, below=of new_track, xshift=3mm] (update) {状态更新\\$\mathbf{x}_k = \mathbf{x}_k + \mathbf{K}(\mathbf{z}_k-\mathbf{H}\mathbf{x}_k)$};
+\node[data, below=of update] (output) {跟踪结果$T_t=\{t_1,\ldots,t_m\}$};
+
+% 连接路径
+\draw[arrow] (input) -- (kf_predict);
+\draw[arrow] (kf_predict) -- (association);
+\draw[arrow] (appearance) -- (association);
+\draw[arrow] (motion) -- (association);
+\draw[arrow] (association) -- (unmatched);
+\draw[arrow] (unmatched) -| node[above left, font=\scriptsize] {新检测} (new_track);
+\draw[arrow] (unmatched) -| node[above right, font=\scriptsize] {失配轨迹} (delete_track);
+\draw[arrow] (new_track) -- (update);
+\draw[arrow] (update) -- (output);
+
+% 侧边注释 - 移动到了更合适的位置
+\node[text width=1.8cm, font=\scriptsize, anchor=west] at (4,-2) (note1) {
+匹配策略：
+\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+\item IoU关联
+\item 外观相似度
+\item 运动一致性
+\end{itemize}
+};
+
+\draw[->, dashed] (note1) -- (association);
+
+\end{tikzpicture}
+\caption{DeepSORT算法框架}
+\label{fig:deepsort}
+\end{figure}
+
+\newpage
+\paragraph{检测关联机制}
+
+DeepSORT的核心创新在于其级联关联策略，它将目标的外观特征与运动状态信息融合，构建了一种多元相似度度量机制。这种方法在计算关联代价时，既考虑了外观的相似性（通过深度特征提取），也考虑了运动的连续性（通过卡尔曼滤波预测）。
+
+具体而言，算法通过加权组合马氏距离（衡量运动状态差异）和余弦距离（衡量外观特征差异）来评估检测框与已有轨迹的匹配程度。在实际应用中，运动信息权重通常设为0.7，外观特征权重设为0.3，这种配置在车载场景下表现最佳。
+
+\paragraph{卡尔曼滤波预测}
+
+DeepSORT使用线性卡尔曼滤波器对目标运动状态进行建模和预测，这是算法稳定性的关键保障。卡尔曼滤波分为预测和更新两个阶段：
+
+\begin{itemize}
+    \item 预测阶段：根据上一时刻的状态估计当前时刻的状态
+    \item 更新阶段：结合实际观测数据对预测状态进行修正
+\end{itemize}
+
+对于车辆跟踪，状态向量包含边界框中心坐标、宽高比、高度及其对应的速度分量。这种设计使系统能够在检测暂时丢失的情况下，仍然维持对目标位置的合理估计，有效应对短时遮挡等场景。
+
+\paragraph{轨迹管理策略}
+
+DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecycle}所示，包括暂存(Tentative)、确认(Confirmed)和删除(Deleted)三种状态：
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=4cm,
+    state/.style={circle, draw, minimum size=2cm, font=\sffamily\bfseries},
+    arrow/.style={->, >=stealth, thick, bend left=20}
+]
+
+% 定义三个状态节点
+\node[state, fill=orange!20, align=center] (tentative) {暂存\\Tentative};
+\node[state, fill=green!20, right of=tentative, align=center] (confirmed) {确认\\Confirmed};
+\node[state, fill=red!20, below of=tentative, yshift=1cm, align=center] (deleted) {删除\\Deleted};
+
+% 添加状态转换箭头
+\draw[arrow] (tentative) to node[above] {连续匹配 ≥ 3} (confirmed);
+\draw[arrow] (tentative) to node[left] {未匹配 ≥ 30/fps} (deleted);
+\draw[arrow] (confirmed) to node[right] {未匹配 ≥ 30/fps} (deleted);
+\draw[arrow] (confirmed) to[bend left=40] node[below] {新检测} (tentative);
+
+% 添加初始箭头
+\draw[arrow, dashed] (-2, 0) to node[above] {新检测} (tentative);
+
+\end{tikzpicture}
+\caption{轨迹状态转换图}
+\label{fig:track_lifecycle}
+\end{figure}
+
+这种机制有效过滤了短期误检，同时保持了对长期稳定目标的连续跟踪：
+
+\begin{itemize}
+    \item 新检测首先被标记为"暂存"状态
+    \item 连续匹配3次后升级为"确认"状态
+    \item 长时间未匹配（根据帧率动态设置，通常为30/fps帧）的轨迹被标记为"删除"状态
+\end{itemize}
+
+通过这种状态管理机制，DeepSORT能够维持稳定的跟踪ID，减少ID切换频率，提高跟踪连续性。
+
+\paragraph{匹配算法优化}
+
+为解决检测框与轨迹的最优匹配问题，DeepSORT采用匈牙利算法(Hungarian Algorithm)求解全局最优分配方案。匹配过程分为两阶段执行：
+
+\begin{itemize}
+    \item 第一阶段：基于外观特征和运动状态匹配确认轨迹
+    \item 第二阶段：仅基于IoU匹配剩余的检测框和短期轨迹
+\end{itemize}
+
+这种级联匹配策略优先处理高质量轨迹，有效提高了密集场景下的匹配精度，特别是对于部分遮挡的车辆。
+
+尽管原始DeepSORT在行人跟踪领域表现优异，但直接应用于车载场景时存在三个主要问题：特征提取模型不匹配、运动模型过于简化、ID切换频繁。
+
+
+
+
+\subsection{碰撞预测模型}
+
+碰撞预测系统是辅助驾驶安全技术的核心组件，通过分析交通参与者的运动状态和空间关系，预测潜在的碰撞风险并提供及时预警。本节介绍碰撞预测的基本理论框架，包括运动轨迹预测、碰撞时间计算以及风险评估模型。
+
+\subsubsection{运动轨迹预测算法}
+
+运动轨迹预测旨在基于目标当前和历史状态，推断其未来可能的位置。在计算资源受限的嵌入式系统中，线性预测模型因其简洁高效而被广泛使用。该模型假设目标在短时间内保持恒定速度，通过当前位置和速度向量进行简单外推：
+
+\begin{equation}
+\begin{bmatrix} x_{t+1} \\ y_{t+1} \end{bmatrix} = \begin{bmatrix} x_t \\ y_t \end{bmatrix} + \begin{bmatrix} v_x \\ v_y \end{bmatrix} \Delta t
+\end{equation}
+
+其中$(x_t, y_t)$表示当前位置，$(v_x, v_y)$表示速度向量，$\Delta t$表示预测时间间隔。该模型适用于短期预测，特别是在车辆运动较为稳定的场景下。
+对于更复杂的场景，如急转弯或加减速，可能需要引入更高阶的预测模型，但这会增加计算开销。
+
+线性预测虽然简单，但对短时间预测（通常为1-3秒）的准确性已足够支持碰撞风险评估。对于大多数道路场景，目标的运动在短时间内通常不会有剧烈变化，因此该模型提供了良好的预测性能与计算效率平衡。
+
+\subsubsection{碰撞时间(TTC)计算模型}
+
+碰撞时间(Time To Collision, TTC)是评估风险紧迫性的核心指标，表示在当前运动状态下，两个物体发生碰撞所需的时间。TTC的基本计算模型为：
+
+\begin{equation}
+TTC = \frac{d}{|v_{rel}|}
+\end{equation}
+
+其中$d$是两物体间的距离，$v_{rel}$是相对速度。这一公式适用于物体沿直线相向运动的简单情况。在实际应用中，通常采用考虑物体尺寸和空间占用的区域碰撞检测方法：
+
+\begin{equation}
+TTC_{region} = \min_{t>0} \{t | Region_A(t) \cap Region_B(t) \neq \emptyset \}
+\end{equation}
+
+其中$Region_A(t)$和$Region_B(t)$分别表示$t$时刻物体A和B的空间占用区域。这种计算方法更为准确，能够考虑物体的实际形状和尺寸，但计算复杂度更高。
+
+在安全系统设计中，TTC阈值通常设置在1.5秒到5秒之间。低于1.5秒被认为是危险状态，需要立即采取措施；而高于5秒则被视为安全状态，仅需保持监测。TTC阈值可根据车速、道路类型和环境条件进行动态调整，以提供更准确的风险评估。
+
+\subsubsection{综合风险评估模型}
+
+碰撞风险评估不仅需要考虑时间距离，还需综合分析多种因素，包括空间关系、相对运动状态和环境条件等。典型的风险评估模型包括以下几个关键因素：
+
+\begin{enumerate}
+    \item \textbf{时空风险因子}：基于TTC值划分风险等级，通常采用分段函数形式：
+
+    \begin{equation}
+    Risk_1 = \begin{cases}
+    1, & \text{若} TTC < T_{critical} \\
+    e^{-\lambda(TTC - T_{critical})}, & \text{若} T_{critical} \leq TTC < T_{warning} \\
+    0, & \text{若} TTC \geq T_{warning}
+    \end{cases}
+    \end{equation}
+
+    其中$T_{critical}$为紧急阈值（通常为1.5秒），$T_{warning}$为预警阈值（通常为5.0秒），$\lambda$为衰减系数，控制风险随TTC增加而降低的速率。
+
+    \item \textbf{道路边界风险}：评估物体是否可能偏离道路。当预测轨迹与道路边界或不可行驶区域相交时，系统应增加风险评分。这对于预测行人、自行车等非机动车辆的异常行为特别重要。
+
+    \item \textbf{相对运动状态风险}：考虑物体间的相对速度、加速度和接近角度。例如，高速正面接近的风险显著高于低速同向运动的情况。
+\end{enumerate}
+
+最终风险评分通过加权融合各个风险因子得出：
+
+\begin{equation}
+Risk_{total} = \sum_{k} w_k \cdot Risk_k
+\end{equation}
+
+其中$w_k$为各风险因子的权重系数，可以根据具体应用场景和系统验证结果进行调整优化。
+
+根据计算得到的风险评分，系统实施分级预警机制：
+
+\begin{equation}
+Alert = \begin{cases}
+\text{紧急避险}, & \text{若} Risk_{total} \geq 0.8 \\
+\text{强预警}, & \text{若} 0.6 \leq Risk_{total} < 0.8 \\
+\text{中等预警}, & \text{若} 0.4 \leq Risk_{total} < 0.6 \\
+\text{轻微提示}, & \text{若} 0.2 \leq Risk_{total} < 0.4 \\
+\text{正常}, & \text{若} Risk_{total} < 0.2
+\end{cases}
+\end{equation}
+
+这种分级预警策略能够根据风险程度提供相应级别的响应，从简单的视觉提示到声光报警，甚至可能触发主动安全功能。分级机制有效平衡了系统的敏感性和特异性，避免因过度报警导致驾驶员对预警信号的忽视。
+
+在嵌入式系统实现中，风险评估模型需要兼顾准确性和计算效率。特别是对于ESP32等资源受限的平台，通常需要简化数学模型、使用查找表替代复杂计算，以及优化关键算法路径，确保系统能够在有限的硬件资源下及时做出预警决策。
+此外，系统还应具备自适应能力，能够在不同道路环境和交通条件下调整预警敏感度，提供既安全又不过度干预的辅助驾驶体验。
+
+% --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+\section{}
+% --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+\section{道路预行区选取}
+
+\subsection{车道规划}
+\subsubsection{车道线提取}
+
+边缘提取是计算机视觉中的基础处理技术，通过提取图像轮廓信息实现特征增强，广泛应用于计算机视觉、模式识别和数字影像处理领域。目前主流边缘检测算法可归纳为三类：
+
+\begin{enumerate}
+    \item \textbf{基于梯度的检测算法}：如Sobel、Prewitt算子，通过计算像素值梯度的幅值与方向识别边界；
+
+    \item \textbf{基于Laplacian的检测算法}：采用二阶差分运算定位边缘区域，代表性算法包括拉普拉斯算子及其改进型LoG（Laplacian of Gaussian）；
+
+    \item \textbf{基于Canny准则的检测算法}：通过灰度计算、梯度处理、非极大值抑制和双阈值检测四个步骤，实现亚像素级精度的连续边缘提取。
+\end{enumerate}
+
+本研究针对车道线检测任务构建了多阶段处理框架，如算法\ref{alg:lane_detection}所示。该框架结合了传统图像处理与现代计算机视觉技术，显著提高了车道线检测的准确性与鲁棒性。
+
+
+\begin{algorithm}[H]
+\caption{车道线检测算法}
+\label{alg:lane_detection}
+\begin{algorithmic}[1]
+\REQUIRE 道路场景图像 $Input Image$
+\ENSURE 车道线参数 $P_{left}$, $P_{right}$
+
+\STATE \textbf{颜色分割}：提取图像中的黄色和白色区域
+\begin{align*}
+    M_{color} &= ColorSegmentation(I)
+\end{align*}
+
+\STATE \textbf{多尺度DoG边缘检测}：应用不同尺度的高斯差分
+\begin{align*}
+    E_{dog} &= \bigcup_{i=1}^{n} DoG(G_{\sigma_{1i}}(M_{color}), G_{\sigma_{2i}}(M_{color}))
+\end{align*}
+
+\STATE \textbf{边缘增强}：通过形态学运算优化边缘
+\begin{align*}
+    E_{enhanced} &= Morphology(E_{dog})
+\end{align*}
+
+
+\STATE \textbf{区域限定}：应用ROI掩码
+\begin{align*}
+    E_{roi} &= E_{enhanced} \cap M_{roi}
+\end{align*}
+
+
+\STATE \textbf{直线检测}：霍夫变换检测直线段
+\begin{align*}
+    L_{left}, L_{right} &= HoughLinesP(E_{roi})
+\end{align*}
+
+
+\STATE \textbf{车道线拟合}：多项式拟合
+\begin{align*}
+    P_{left} &= PolyFit(L_{left}, 2) \\
+    P_{right} &= PolyFit(L_{right}, 2)
+\end{align*}
+
+\RETURN $P_{left}$, $P_{right}$
+\end{algorithmic}
+\end{algorithm}
+
+\noindent\rule{\textwidth}{0.4pt}
+
+%  ----------------------------------------------------------------------
+
+具体流程如下：
+\begin{enumerate}
+    \item \textbf{颜色分割}：将RGB图像转换为HSV色彩空间，提取车道线区域（主要是黄色和白色），如图\ref{fig:color_seg}所示。HSV色彩空间对光照变化不敏感，能有效减少背景干扰。与RGB空间相比，HSV空间更有效地分离色相、饱和度和亮度信息，使算法在不同照明条件下保持较高鲁棒性。经过颜色分割后，路面纹理、周围车辆和地面阴影等干扰元素得到显著抑制，为边缘检测提供高质量输入。
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/1_color_segmentation.png}
+        \begin{center}
+        (a) 原始图像 \hspace{3cm} (b) 颜色分割结果
+        \end{center}
+        \caption{颜色分割处理效果图}
+        \label{fig:color_seg}
+    \end{figure}
+
+    \item \textbf{多尺度DoG边缘检测}：如图\ref{fig:dog_edge}所示，高斯差分（DoG）算子通过计算不同尺度高斯滤波的差值检测边缘。采用多组$\sigma$值（$(1.0,2.0)$、$(2.0,4.0)$和$(3.0,6.0)$），捕获不同宽度和清晰度的车道线。小尺度的高斯差分保留细节信息，适合检测近处清晰的车道线；中等尺度平衡细节与噪声抑制；大尺度则应对模糊或磨损的远处车道线。多尺度融合策略利用不同尺度信息的互补性，显著提升检测完整性。
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/2_dog_edge_detection.png}
+        \begin{center}
+        (a) 颜色分割结果 \hspace{3cm} (b) DoG边缘检测结果
+        \end{center}
+        \caption{多尺度DoG边缘检测效果图}
+        \label{fig:dog_edge}
+    \end{figure}
+
+    \item \textbf{边缘增强}：通过形态学处理增强边缘连续性，解决车道线断裂或模糊问题，如图\ref{fig:edge_enhance}所示。首先应用顶帽变换突出比周围区域亮的细节结构；随后的闭运算（先膨胀后腐蚀）填充微小间隙，连接相近边缘点；开运算（先腐蚀后膨胀）去除孤立噪点；最后的膨胀操作增强边缘可见度。这一多阶段形态学处理显著提高了车道线的完整性和连贯性，为几何分析奠定基础。
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/3_edge_enhancement.png}
+        \begin{center}
+        (a) DoG边缘检测结果 \hspace{3cm} (b) 形态学增强后结果
+        \end{center}
+        \caption{边缘增强处理效果图}
+        \label{fig:edge_enhance}
+    \end{figure}
+
+    \item \textbf{区域限定}：定义梯形ROI（感兴趣区域），如图\ref{fig:roi}所示，仅保留图像下部可能含车道线的区域。梯形上部较窄对应远处汇聚的车道线，下部较宽匹配近处分散的车道线。区域限定不仅降低了计算复杂度，提高算法实时性，还有效排除了图像上部的天空、建筑物和植被等非关键区域。图\ref{fig:roi_mask}展示ROI蒙版应用效果。
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/roi_comparison.png}
+        \begin{center}
+        (a) 原始图像 \hspace{3cm} (b) ROI区域可视化
+        \end{center}
+        \caption{ROI区域定义图}
+        \label{fig:roi}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/4_roi_masking.png}
+        \begin{center}
+        (a) 边缘增强结果 \hspace{3cm} (b) ROI掩码应用结果
+        \end{center}
+        \caption{ROI掩码应用效果图}
+        \label{fig:roi_mask}
+    \end{figure}
+
+    \item \textbf{直线检测}：应用概率霍夫变换检测边缘图中的直线段，如图\ref{fig:line_detect}所示。根据斜率将检测到的线段分为左右两组（负斜率为左，正斜率为右），同时过滤接近水平的线段（$|slope| < 0.4$）。概率霍夫变换通过将笛卡尔空间中的点映射到霍夫参数空间，将线段检测转化为峰值查找问题。斜率过滤机制有效去除横向车道标记、路面裂缝等无关线段，提高后续拟合精度。
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/5_line_detection.png}
+        \begin{center}
+        (a) ROI掩码处理结果 \hspace{3cm} (b) 直线检测结果
+        \end{center}
+        \caption{霍夫变换直线检测效果图}
+        \label{fig:line_detect}
+    \end{figure}
+
+    \item \textbf{车道线拟合}：如图\ref{fig:lane_fit}所示，对分类后的线段点集应用二次多项式拟合，获得平滑连续的车道线表示。二次多项式形式为$x = ay^2 + by + c$，以$y$为自变量、$x$为因变量。拟合过程采用最小二乘法，通过最小化拟合曲线与实际点集间的平方误差和，得到最优参数。二次多项式模型适合道路曲率变化平缓的特点，避免高阶多项式的过拟合风险。最终检测结果如图\ref{fig:final_result}所示。
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/6_lane_fitting.png}
+        \begin{center}
+        (a) 检测到的直线段 \hspace{3cm} (b) 多项式拟合结果
+        \end{center}
+        \caption{车道线拟合效果图}
+        \label{fig:lane_fit}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/chapter3/7_final_result.png}
+        \begin{center}
+        (a) 原始图像 \hspace{3cm} (b) 车道线检测结果
+        \end{center}
+        \caption{车道线检测结果}
+        \label{fig:final_result}
+    \end{figure}
+\end{enumerate}
+
+提取车道线后，获得了较为准确的真实车道信息，为后续的安全预行区域确定提供了基础。
+
+\subsubsection{FastSCNN推理}
+
+
+
+% 打印参考文献
+\clearpage
+\printbibliography[title=参考文献]
+\thispagestyle{fancy} % 参考文献页使用自定义页眉页脚
+
+\end{document}
