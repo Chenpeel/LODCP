@@ -49,7 +49,7 @@ jobs:
           git clone https://github.com/espressif/esp32-camera.git esp32-camera
 
           echo "克隆 ESP-DL 组件..."
-          git clone https://github.com/espressif/esp-dl.git esp-dl
+          git clone -b release/v1.0 https://github.com/espressif/esp-dl.git esp-dl
 
           echo "克隆 TFLite-Micro 组件..."
           git clone https://github.com/tensorflow/tflite-micro.git  tflite-micro

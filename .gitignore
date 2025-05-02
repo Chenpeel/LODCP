@@ -13,6 +13,9 @@ runs
 events.out.tfevents.*
 private.yml
 models/z_ig_*
-!models/yolov5su/weights
+!models/v5su/weights
 !models/fastscnn/weights/
-*.drawio
+!models/v5nu/weights
+!models/v5su_t_nu/weights
+docs/papers/
+explain.md
