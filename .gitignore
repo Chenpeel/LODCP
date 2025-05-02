@@ -17,5 +17,5 @@ models/z_ig_*
 !models/fastscnn/weights/
 !models/v5nu/weights
 !models/v5su_t_nu/weights
-docs/papers/
+docs/papers
 explain.md
