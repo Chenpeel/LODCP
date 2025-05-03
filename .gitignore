@@ -19,3 +19,4 @@ models/z_ig_*
 !models/v5su_t_nu/weights
 docs/papers
 explain.md
+*.zip
