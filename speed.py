@@ -4,7 +4,7 @@ import pandas as pd
 # 定义模型路径
 model_paths = {
     "v5su": "models/v5su/weights/best.pt",
-    "v5su_t_nu": "v5su_t_nu/weights/best.pt",
+    "v5su_t_nu": "models/v5su_t_nu/weights/best.pt",
     "v5nu": "models/v5nu/weights/best.pt"
 }
 
