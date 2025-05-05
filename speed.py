@@ -9,7 +9,7 @@ model_paths = {
 }
 
 # 定义数据集路径
-data_yaml = "/Users/alpha/Downloads/selfRepo/lodcp/data/bdd100k-yolo/bdd100k.yaml"
+data_yaml = "data/bdd100k-yolo/bdd100k.yaml"
 
 # 创建结果DataFrames
 results_df = pd.DataFrame()

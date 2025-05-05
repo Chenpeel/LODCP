@@ -8,6 +8,12 @@ standalone_df = pd.read_csv('models/v5nu/results.csv')
 distilled_df = pd.read_csv('models/v5su_t_nu/results.csv')
 teacher_df = pd.read_csv('models/v5su/results.csv')
 
+teacher_color = 'blue'
+distilled_color = 'red'
+standalone_color = 'green'
+
+
+
 # 设置绘图样式
 plt.style.use('ggplot')
 sns.set_palette("colorblind")
@@ -18,9 +24,9 @@ fig = plt.figure(figsize=(20, 24))
 
 # 1. mAP50-95 对比
 ax1 = fig.add_subplot(3, 2, 1)
-ax1.plot(teacher_df['epoch'], teacher_df['metrics/mAP50-95(B)'], label='Teacher (v5nu)')
-ax1.plot(distilled_df['epoch'], distilled_df['metrics/mAP50-95(B)'], label='Distilled (v5su_t_nu)')
-ax1.plot(standalone_df['epoch'], standalone_df['metrics/mAP50-95(B)'], label='Standalone (v5su)')
+ax1.plot(teacher_df['epoch'], teacher_df['metrics/mAP50-95(B)'], label='Teacher',color=teacher_color)
+ax1.plot(distilled_df['epoch'], distilled_df['metrics/mAP50-95(B)'], label='Distilled',color=distilled_color)
+ax1.plot(standalone_df['epoch'], standalone_df['metrics/mAP50-95(B)'], label='Standalone',color=standalone_color)
 ax1.set_title('mAP50-95 Comparison')
 ax1.set_xlabel('Epochs')
 ax1.set_ylabel('mAP50-95')
@@ -29,9 +35,9 @@ ax1.grid(True)
 
 # 2. Precision 对比
 ax2 = fig.add_subplot(3, 2, 2)
-ax2.plot(teacher_df['epoch'], teacher_df['metrics/precision(B)'], label='Teacher (v5nu)')
-ax2.plot(distilled_df['epoch'], distilled_df['metrics/precision(B)'], label='Distilled (v5su_t_nu)')
-ax2.plot(standalone_df['epoch'], standalone_df['metrics/precision(B)'], label='Standalone (v5su)')
+ax2.plot(teacher_df['epoch'], teacher_df['metrics/precision(B)'], label='Teacher',color=teacher_color)
+ax2.plot(distilled_df['epoch'], distilled_df['metrics/precision(B)'], label='Distilled',color=distilled_color)
+ax2.plot(standalone_df['epoch'], standalone_df['metrics/precision(B)'], label='Standalone',color=standalone_color)
 ax2.set_title('Precision Comparison')
 ax2.set_xlabel('Epochs')
 ax2.set_ylabel('Precision')
@@ -40,9 +46,9 @@ ax2.grid(True)
 
 # 3. Recall 对比
 ax3 = fig.add_subplot(3, 2, 3)
-ax3.plot(teacher_df['epoch'], teacher_df['metrics/recall(B)'], label='Teacher (v5nu)')
-ax3.plot(distilled_df['epoch'], distilled_df['metrics/recall(B)'], label='Distilled (v5su_t_nu)')
-ax3.plot(standalone_df['epoch'], standalone_df['metrics/recall(B)'], label='Standalone (v5su)')
+ax3.plot(teacher_df['epoch'], teacher_df['metrics/recall(B)'], label='Teacher',color=teacher_color)
+ax3.plot(distilled_df['epoch'], distilled_df['metrics/recall(B)'], label='Distilled',color=distilled_color)
+ax3.plot(standalone_df['epoch'], standalone_df['metrics/recall(B)'], label='Standalone',color=standalone_color)
 ax3.set_title('Recall Comparison')
 ax3.set_xlabel('Epochs')
 ax3.set_ylabel('Recall')
@@ -51,9 +57,9 @@ ax3.grid(True)
 
 # 4. Box Loss 对比
 ax4 = fig.add_subplot(3, 2, 4)
-ax4.plot(teacher_df['epoch'], teacher_df['val/box_loss'], label='Teacher (v5nu)')
-ax4.plot(distilled_df['epoch'], distilled_df['val/box_loss'], label='Distilled (v5su_t_nu)')
-ax4.plot(standalone_df['epoch'], standalone_df['val/box_loss'], label='Standalone (v5su)')
+ax4.plot(teacher_df['epoch'], teacher_df['val/box_loss'], label='Teacher',color=teacher_color)
+ax4.plot(distilled_df['epoch'], distilled_df['val/box_loss'], label='Distilled',color=distilled_color)
+ax4.plot(standalone_df['epoch'], standalone_df['val/box_loss'], label='Standalone',color=standalone_color)
 ax4.set_title('Validation Box Loss Comparison')
 ax4.set_xlabel('Epochs')
 ax4.set_ylabel('Box Loss')
@@ -62,9 +68,9 @@ ax4.grid(True)
 
 # 5. Class Loss 对比
 ax5 = fig.add_subplot(3, 2, 5)
-ax5.plot(teacher_df['epoch'], teacher_df['val/cls_loss'], label='Teacher (v5nu)')
-ax5.plot(distilled_df['epoch'], distilled_df['val/cls_loss'], label='Distilled (v5su_t_nu)')
-ax5.plot(standalone_df['epoch'], standalone_df['val/cls_loss'], label='Standalone (v5su)')
+ax5.plot(teacher_df['epoch'], teacher_df['val/cls_loss'], label='Teacher',color=teacher_color)
+ax5.plot(distilled_df['epoch'], distilled_df['val/cls_loss'], label='Distilled',color=distilled_color)
+ax5.plot(standalone_df['epoch'], standalone_df['val/cls_loss'], label='Standalone',color=standalone_color)
 ax5.set_title('Validation Class Loss Comparison')
 ax5.set_xlabel('Epochs')
 ax5.set_ylabel('Class Loss')
@@ -73,9 +79,9 @@ ax5.grid(True)
 
 # 6. DFL Loss 对比
 ax6 = fig.add_subplot(3, 2, 6)
-ax6.plot(teacher_df['epoch'], teacher_df['val/dfl_loss'], label='Teacher (v5nu)')
-ax6.plot(distilled_df['epoch'], distilled_df['val/dfl_loss'], label='Distilled (v5su_t_nu)')
-ax6.plot(standalone_df['epoch'], standalone_df['val/dfl_loss'], label='Standalone (v5su)')
+ax6.plot(teacher_df['epoch'], teacher_df['val/dfl_loss'], label='Teacher',color=teacher_color)
+ax6.plot(distilled_df['epoch'], distilled_df['val/dfl_loss'], label='Distilled',color=distilled_color)
+ax6.plot(standalone_df['epoch'], standalone_df['val/dfl_loss'], label='Standalone',color=standalone_color)
 ax6.set_title('Validation DFL Loss Comparison')
 ax6.set_xlabel('Epochs')
 ax6.set_ylabel('DFL Loss')
@@ -105,9 +111,9 @@ ax = fig2.add_subplot(111)
 bar_width = 0.25
 index = np.arange(len(metrics))
 
-bar1 = ax.bar(index, data_array[:, 0], bar_width, label='Teacher (v5nu)')
-bar2 = ax.bar(index + bar_width, data_array[:, 1], bar_width, label='Distilled (v5su_t_nu)')
-bar3 = ax.bar(index + 2 * bar_width, data_array[:, 2], bar_width, label='Standalone (v5su)')
+bar1 = ax.bar(index, data_array[:, 0], bar_width, label='Teacher',color=teacher_color)
+bar2 = ax.bar(index + bar_width, data_array[:, 1], bar_width, label='Distilled',color=distilled_color)
+bar3 = ax.bar(index + 2 * bar_width, data_array[:, 2], bar_width, label='Standalone',color=standalone_color)
 
 ax.set_xlabel('Metrics')
 ax.set_ylabel('Score')
@@ -142,9 +148,9 @@ distilled_time_per_epoch = distilled_df['time'].diff().mean()
 standalone_time_per_epoch = standalone_df['time'].diff().mean()
 
 times = [teacher_time_per_epoch, distilled_time_per_epoch, standalone_time_per_epoch]
-models = ['Teacher (v5nu)', 'Distilled (v5su_t_nu)', 'Standalone (v5su)']
+models = ['Teacher (YOLOv5su)', 'Distilled', 'Standalone (YOLOv5nu)']
 
-ax.bar(models, times, color=['blue', 'green', 'red'])
+ax.bar(models, times, color=[teacher_color,distilled_color,standalone_color])
 ax.set_title('Average Time Per Epoch')
 ax.set_xlabel('Model')
 ax.set_ylabel('Time (seconds)')
