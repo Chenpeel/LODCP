@@ -54,12 +54,12 @@ jobs:
           idf.py set-target esp32
           idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults" -DPARTITION_TABLE_CSV_PATH="partitions.csv" build
 
-      - name: Upload build logs
-        if: always()
+      - name: Upload firmware binaries
+        if: success()
         uses: actions/upload-artifact@v3
         with:
-          name: build-logs
+          name: firmware-binaries
           path: |
-            firmware/build
-            firmware/build/CMakeFiles/CMakeError.log
-            firmware/build/CMakeFiles/CMakeOutput.log
+            firmware/build/*.bin
+            firmware/build/bootloader/*.bin
+            firmware/build/partition_table/*.bin
