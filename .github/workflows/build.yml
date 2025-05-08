@@ -20,23 +20,29 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
-
-      - name: Install ESP-IDF dependencies
+          update-environment: false
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y git wget flex bison gperf python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 python3-opencv
+          python -m pip install --upgrade pip virtualenv
 
-      - name: Set up ESP-IDF (Fixed)
+      - name: Set up ESP-IDF
         run: |
-          # 清理旧环境并确保 pip 可用
-          python -m ensurepip --upgrade
+          # 确保pip可用
+          python -m ensurepip --default-pip
           python -m pip install --upgrade pip
 
+          # 设置环境变量
+          export IDF_PYTHON_ENV_PATH=$HOME/.espressif/python_env
+          mkdir -p $IDF_PYTHON_ENV_PATH
+
+          # 安装ESP-IDF
           mkdir -p $HOME/esp
           cd $HOME/esp
-          git clone --depth 1 https://github.com/espressif/esp-idf.git
+          git clone --depth 1 --branch v5.1.1 https://github.com/espressif/esp-idf.git
           cd esp-idf
-          ./install.sh esp32
+          ./install.sh --prefer-system --no-shallow-clone esp32
         env:
           IDF_TOOLS_PATH: $HOME/.espressif
 
