@@ -1,9 +1,14 @@
 #include "../include/video_recorder.h"
 #include "../include/deep_sort.h"
 #include "../include/semantic_seg.h"
+
+#include "esp_http_server.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_vfs.h"
 #include "img_converters.h"
+
+#include <dirent.h>
 #include <mutex>
 #include <stdio.h>
 #include <string>
@@ -11,12 +16,9 @@
 #include <time.h>
 #include <vector>
 
-static const char *TAG = "VideoRecorder";
-#include "esp_http_server.h"
-#include "esp_vfs.h"
-#include <dirent.h>
-
 #define SCRATCH_BUFSIZE 8192
+
+static const char *TAG = "VideoRecorder";
 
 struct file_server_data {
   char base_path[ESP_VFS_PATH_MAX + 1];

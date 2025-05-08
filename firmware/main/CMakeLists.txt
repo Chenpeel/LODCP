@@ -4,12 +4,9 @@ idf_component_register(
         "init.cpp"
         "wifi.cpp"
         "process.cpp"
-        "model_loader.cpp"
-        "deep_sort.cpp"
         "semantic_seg.cpp"
-        "collision.cpp"
-        "image_filters.cpp"
         "video_recorder.cpp"
+        "lane_area_detect.cpp"
     INCLUDE_DIRS
         "."
         "../include"
