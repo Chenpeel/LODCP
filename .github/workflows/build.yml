@@ -1,67 +1,79 @@
-name: ESP32 Build
+name: Build ESP32-CAM LODCP Firmware
 
 on:
   push:
-    branches:
-      - master
+    branches: [main, master, dev]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/build.yml"
   pull_request:
-    branches:
-      - master
+    branches: [main, master]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.10"
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git wget flex bison gperf python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 python3-opencv
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v4.4.3
+          target: esp32
 
-      - name: Set up ESP-IDF
-        run: |
-          mkdir -p $HOME/esp
-          cd $HOME/esp
-          git clone --depth 1 https://github.com/espressif/esp-idf.git
-          cd esp-idf
-          # 检查 install.sh 支持的参数
-          ./install.sh --help || true
-          # 简单安装，不带特殊参数
-          ./install.sh esp32
-        env:
-          IDF_TOOLS_PATH: $HOME/.espressif
-          # 尝试通过环境变量跳过Python虚拟环境
-          IDF_PYTHON_CHECK_CONSTRAINTS: "no"
-
-      - name: Prepare components
+      - name: Setup components
         run: |
           mkdir -p firmware/components
           cd firmware/components
-          git clone https://github.com/espressif/esp32-camera.git esp32-camera
-          git clone -b release/v1.0 https://github.com/espressif/esp-dl.git esp-dl
-          git clone https://github.com/tensorflow/tflite-micro.git tflite-micro
+          # Clone necessary components
+          git clone --recursive https://github.com/espressif/esp32-camera.git
+          git clone --recursive https://github.com/espressif/esp-dl.git
+          git clone --recursive https://github.com/espressif/tflite-micro-esp-examples.git tflite-micro
+          cd tflite-micro
+          bash setup.sh
 
-      - name: Build project
+      - name: Build firmware with ESP-IDF
         run: |
-          source $HOME/esp/esp-idf/export.sh
           cd firmware
           idf.py set-target esp32
-          idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults" -DPARTITION_TABLE_CSV_PATH="partitions.csv" build
+          idf.py build
 
-      - name: Upload firmware binaries
-        if: success()
+      - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
           name: firmware-binaries
           path: |
-            firmware/build/*.bin
-            firmware/build/bootloader/*.bin
-            firmware/build/partition_table/*.bin
+            firmware/build/lodcp.bin
+            firmware/build/partition_table/partition-table.bin
+            firmware/build/bootloader/bootloader.bin
+          retention-days: 7
+
+      - name: Create firmware bundle
+        run: |
+          mkdir -p firmware-bundle
+          cp firmware/build/lodcp.bin firmware-bundle/
+          cp firmware/build/partition_table/partition-table.bin firmware-bundle/
+          cp firmware/build/bootloader/bootloader.bin firmware-bundle/
+          cd firmware-bundle
+          zip -r ../firmware-bundle.zip .
+          cd ..
+
+      - name: Upload firmware bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-bundle
+          path: firmware-bundle.zip
+          retention-days: 7
