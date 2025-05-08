@@ -26,8 +26,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git wget flex bison gperf python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 python3-opencv
 
-      - name: Set up ESP-IDF
+      - name: Set up ESP-IDF (Fixed)
         run: |
+          # 清理旧环境并确保 pip 可用
+          python -m ensurepip --upgrade
+          python -m pip install --upgrade pip
+
           mkdir -p $HOME/esp
           cd $HOME/esp
           git clone --depth 1 https://github.com/espressif/esp-idf.git
@@ -35,9 +39,6 @@ jobs:
           ./install.sh esp32
         env:
           IDF_TOOLS_PATH: $HOME/.espressif
-
-      - name: Add ESP-IDF to PATH
-        run: echo "$HOME/esp/esp-idf/export.sh" >> $GITHUB_ENV
 
       - name: Prepare components
         run: |
