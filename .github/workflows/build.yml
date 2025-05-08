@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: espressif/idf:v4.4.3
+    container: espressif/idf:latest
 
     steps:
       - name: Checkout Code
@@ -72,8 +72,8 @@ jobs:
         run: |
           . /opt/esp/idf/export.sh
           cd firmware
-          idf.py set-target esp32
-          idf.py build
+          /opt/esp/idf/idf.py set-target esp32
+          /opt/esp/idf/idf.py build
       - name: List build directory
         run: |
           ls -la firmware/build/ || echo "Build directory not found"
