@@ -32,9 +32,14 @@ jobs:
           cd $HOME/esp
           git clone --depth 1 https://github.com/espressif/esp-idf.git
           cd esp-idf
-          ./install.sh --prefer-system esp32
+          # 检查 install.sh 支持的参数
+          ./install.sh --help || true
+          # 简单安装，不带特殊参数
+          ./install.sh esp32
         env:
           IDF_TOOLS_PATH: $HOME/.espressif
+          # 尝试通过环境变量跳过Python虚拟环境
+          IDF_PYTHON_CHECK_CONSTRAINTS: "no"
 
       - name: Prepare components
         run: |
