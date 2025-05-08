@@ -1,5 +1,7 @@
 
-\documentclass[a4paper, UTF8]{ctexart}
+\documentclass[a4paper, UTF8, fontsize=12pt]{ctexart} % 小四号约为12pt
+
+% 导入必要的宏包
 \usepackage{fontspec}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -13,33 +15,63 @@
 \usepackage{mathtools}
 \usepackage{unicode-math}
 \usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false]{biblatex}
+\usepackage[top=2.8cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{caption}
 \usepackage{fancyhdr}
 \usepackage{enumitem}
 \usepackage{pifont}
 \usepackage{tikz}
 \usepackage{float}
-\usetikzlibrary{matrix,shapes,arrows,positioning,decorations.pathreplacing,fit, backgrounds, calc,shapes.geometric, arrows.meta}
 \usepackage{algorithm2e}
 \usepackage{algorithmic}
-\usetikzlibrary{positioning}
-% 设置页眉页脚
-\pagestyle{fancy}
-\fancyhf{} % 清除所有页眉页脚
-\fancyhead[C]{安徽理工大学毕业设计（论文）} % 页眉居中显示
-\fancyfoot[C]{\thepage} % 页码居中显示在页脚
-\setlength{\headheight}{12.64723pt}
-% 设置引用样式为上标
-\renewcommand{\cite}[1]{\textsuperscript{\supercite{#1}}}
+
+% TikZ库
+\usetikzlibrary{matrix,shapes,arrows,positioning,decorations.pathreplacing,fit,backgrounds,calc,shapes.geometric,arrows.meta}
+
+% 设置行距
+\linespread{1.67} % 20磅固定行距
+\setlength{\baselineskip}{20pt} % 确保20磅的行距
 
 % 设置字体
 \setmainfont{Times New Roman}
-\setCJKmainfont{Songti SC}
+\setCJKmainfont[BoldFont="STHeiti"]{STSong} % 宋体
+
+% 设置章节标题格式
+\CTEXsetup[format={\centering\Large\bfseries}]{section}  % 小三号约为15pt
+\CTEXsetup[format={\bfseries}]{subsection} % 同正文大小，黑体
+\CTEXsetup[format={\bfseries}]{subsubsection} % 同正文大小，黑体
+\CTEXsetup[name={,}, number={\arabic{section}}]{section}
+\CTEXsetup[name={,}, number={\arabic{section}.\arabic{subsection}}]{subsection}
+\CTEXsetup[name={,}, number={\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}]{subsubsection}
+
+% 设置图表标题格式
+\captionsetup[figure]{font=small, labelsep=space} % 五号约为10.5pt
+\captionsetup[table]{font=small, labelsep=space} % 五号约为10.5pt
+
+% 设置页眉页脚
+\pagestyle{fancy}
+\fancyhf{} % 清除所有页眉页脚
+\fancyhead[C]{\fontsize{14pt}{16.8pt}\selectfont\songti 安徽理工大学毕业设计（论文）} % 四号宋体
+\fancyfoot[C]{\fontsize{10.5pt}{12.6pt}\selectfont\songti \thepage} % 五号宋体
+\setlength{\headheight}{16pt}
+
+% 目录格式
+\renewcommand{\cftsecfont}{\bfseries\songti} % 一级标题黑体
+\renewcommand{\cftsecpagefont}{\bfseries\songti} % 页码也用黑体
+\renewcommand{\cftsubsecfont}{\songti} % 二级标题宋体
+\renewcommand{\cftsubsecpagefont}{\songti} % 页码也用宋体
+
+% 公式编号
+\numberwithin{equation}{section} % 按节编号
+
+% 设置引用样式为上标带方括号
+\renewcommand{\cite}[1]{[\supercite{#1}]}
 
 % 设置章节格式
-\usepackage{titlesec}
 \newcommand{\sectionbreak}{\clearpage}
 \newlist{circledlist}{enumerate}{1}
 \setlist[circledlist]{label=\ding{\numexpr171+\value{circledlisti}\relax}}
+
 % 参考文献文件
 \addbibresource{references.bib}
 
@@ -57,6 +89,7 @@
 
 
 {\Large \textbf{基于深度学习的车道障碍检测与碰撞预测方法研究}}
+
 {\Large \textbf{Research on Deep Learning-Based Lane Obstacle Detection and Collision Prediction Methodology}}
 \vspace{1.5cm}
 
@@ -130,7 +163,8 @@ For the common occlusion problems in multi-object tracking, this research optimi
 % 正文内容开始
 \section{绪论}
 % 第一章的图表编号格式
-\renewcommand{\thefigure}{1-\arabic{figure}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -153,7 +187,7 @@ For the common occlusion problems in multi-object tracking, this research optimi
 
 基于像素级的语义图像分割技术将图像中的每个像素分类为特定实例，每个实例对应一个类别\cite{asgari2021deep}。在道路分割中，可以通过二值分割提取车道线轮廓，再应用聚类算法将其分组以区分不同车道；或者直接预测每个车道线的分割图，并使用曲线拟合确定更精确的几何形状。考虑到车道线的细长特性，一些研究将这种特征融入神经网络架构中，如SCNN\cite{parashar2017scnn}采用逐切片的空间卷积策略，增强特征图行列间的像素信息交流。
 
-在智能辅助驾驶这一要求高实时性的领域，高参数大模型带来的时间成本不容忽视。为提升推理速度，研究者开发了多种优化策略，包括剪枝\cite{zhu2017prune,park2022prune,huang2018learning}、量化\cite{goodman1975robust, fischer1986pyramid, montestruque2007static}，知识蒸馏\cite{hou2019learning,hou2020inter,park2019relational}和轻量级分割网络\cite{paszke2016enet}等。国内车道检测研究主要包括：通过超锚方式解决车道线复杂、背景紊乱问题，从车道线的结构和稀疏特性出发，解决复杂情景下的锯齿、断裂问题\cite{1025006135.nh}；以及通过高分辨率街景语义分割网络对街道进行精细化建模，设计多注意力模块以提高精度和模型效率\cite{1025306207.nh}。
+在智能辅助驾驶这一要求高实时性的领域，高参数大模型带来的时间成本不容忽视。为提升推理速度，研究者开发了多种优化策略，包括剪枝\cite{zhu2017prune,park2022prune,huang2018learning}、量化\cite{goodman1975robust, fischer1986pyramid, an2025quantization}，知识蒸馏\cite{hou2019learning,hou2020inter,park2019relational}和轻量级分割网络\cite{paszke2016enet}等。国内车道检测研究主要包括：通过超锚方式解决车道线复杂、背景紊乱问题，从车道线的结构和稀疏特性出发，解决复杂情景下的锯齿、断裂问题\cite{1025006135.nh}；以及通过高分辨率街景语义分割网络对街道进行精细化建模，设计多注意力模块以提高精度和模型效率\cite{1025306207.nh}。
 
 目前障碍物检测主要分为接触式和非接触式两类。接触式检测主要基于传感器技术\cite{discant2007sensors}，通过分析道路及周围环境形变信息，判断障碍物存在并给出预警；非接触式检测则主要依靠机器视觉技术\cite{badrloo2022image}，通过高速相机、图像处理算法和深度神经网络实现道路障碍检测。国内研究主要包括：ViBe\cite{barnich2010vibe}算法的运动目标检测\cite{SJSJ202406024}，该算法通过随机背景替换值调整模型，实现基于背景消除的实时运动目标检测；此外，研究者还提出将ViBe与光流法、帧差法及深度学习相结合的新型目标检测算法\cite{SCQX20250311001}，对交通场景中的复杂目标展现出较好的效果。
 
@@ -187,7 +221,8 @@ For the common occlusion problems in multi-object tracking, this research optimi
 
 \newpage
 \section{相关理论基础}
-\renewcommand{\thefigure}{2-\arabic{figure}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -564,7 +599,8 @@ DeepSORT算法相比传统方法具有以下显著优势：\textbf{鲁棒性增�
 
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{3-\arabic{figure}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -812,7 +848,8 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 
 % ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{4-\arabic{figure}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -911,17 +948,25 @@ IoU(A, B) = \frac{A \cap B}{A \cup B}
 
 对教师模型(YOLOv5su)、蒸馏后的学生模型(YOLOv5nu-蒸馏)和未经蒸馏训练的学生模型(YOLOv5nu-原始)进行了全面的性能比较。
 
-% TODO
-% 图\ref{fig:inference_speed_comparison}展示了三个模型在推理速度上的对比。
+从图\ref{fig:processing_time}可以明显观察到，蒸馏后的YOLOv5nu模型相较于原始教师模型YOLOv5su，推理速度提高至其171\%（使用Kaggle 单GPU T4 15G进行速度测试）。这一速度提升对于自动驾驶系统的实时决策至关重要，使系统能够更快地响应环境变化。
 
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=1\textwidth]{figures/chapter4/time_compare.png}
-%     \caption{模型推理速度对比}
-%     \label{fig:inference_speed_comparison}
-% \end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/chapter4/ptc.png}
+    \caption{Detailed comparison of processing time across different stages for each model.}
+    \label{fig:processing_time}
+\end{figure}
 
-% 从图\ref{fig:inference_speed_comparison}可以明显观察到，蒸馏后的YOLOv5nu模型相较于原始教师模型YOLOv5su，推理速度提高了约2倍。这一速度提升对于自动驾驶系统的实时决策至关重要，使系统能够更快地响应环境变化。
+同时，在对处理要求较严格的智能驾驶方向，FPS十分重要，如图\ref{fig:fps_comparison}，在保留了YOLOv5nu的处理速度的同时，较好地保留了YOLOv5su的精度。
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chapter4/fps.png}
+    \caption{Frame rate (FPS) comparison between different models.}
+    \label{fig:fps_comparison}
+\end{figure}
+
 
 图\ref{fig:accuracy_loss_comparison}展示了三个模型在精度和损失函数方面的比较。
 
@@ -1091,6 +1136,7 @@ DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecy
 状态转移矩阵$\mathbf{F}$采用匀速运动模型：
 
 \begin{equation}
+\label{eq:kalman_f}
 \mathbf{F} =
 \begin{bmatrix}
 \mathbf{I}_4 & \Delta t \cdot \mathbf{I}_4 \\
@@ -1240,7 +1286,8 @@ d_{IoU}(i,j) = 1 - IoU(i,j)
 
 % ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{5-\arabic{figure}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -1327,7 +1374,8 @@ Alert = \begin{cases}
 
 % ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{6-\arabic{figure}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
