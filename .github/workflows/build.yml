@@ -29,25 +29,24 @@ jobs:
           apt-get update
           apt-get install -y git wget unzip python3-pip
           pip install --upgrade pip
-
       - name: Setup components
         run: |
           mkdir -p firmware/components
           cd firmware/components
-
           # Clone ESP32 Camera
           git clone --recursive https://github.com/espressif/esp32-camera.git
-
+          # Fix incompatible manifest file in esp32-camera
+          if [ -f "esp32-camera/idf_component.yml" ]; then
+            echo "Fixing esp32-camera manifest file for IDF v4.4.3 compatibility"
+            sed -i '/documentation\:|issues\:|repository\:/d' esp32-camera/idf_component.yml
+          fi
           # Clone ESP-DL
           git clone --recursive https://github.com/espressif/esp-dl.git
-
           # Clone and setup TFLite-micro
           git clone --recursive https://github.com/espressif/tflite-micro-esp-examples.git tflite-micro
           cd tflite-micro
-
           # Check repository structure
           ls -la
-
           # Run the setup script if it exists
           if [ -f "setup.sh" ]; then
             chmod +x setup.sh
@@ -69,18 +68,15 @@ jobs:
               mkdir -p components/tflite-lib
             fi
           fi
-
       - name: Build firmware with ESP-IDF
         run: |
           . /opt/esp/idf/export.sh
           cd firmware
           idf.py set-target esp32
           idf.py build
-
       - name: List build directory
         run: |
           ls -la firmware/build/ || echo "Build directory not found"
-
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -98,14 +94,12 @@ jobs:
           find firmware/build -name "*.bin" -exec cp {} firmware-bundle/ \; || echo "No .bin files found"
           find firmware/build/partition_table -name "*.bin" -exec cp {} firmware-bundle/ \; || echo "No partition table .bin files found"
           find firmware/build/bootloader -name "*.bin" -exec cp {} firmware-bundle/ \; || echo "No bootloader .bin files found"
-
           if [ "$(ls -A firmware-bundle)" ]; then
             zip -r firmware-bundle.zip firmware-bundle/
           else
             echo "No firmware files found to bundle"
             exit 1
           fi
-
       - name: Upload firmware bundle
         uses: actions/upload-artifact@v4
         with:
