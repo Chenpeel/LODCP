@@ -16,6 +16,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: espressif/idf:v4.4.3
 
     steps:
       - name: Checkout Code
@@ -23,16 +24,11 @@ jobs:
         with:
           submodules: "recursive"
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Setup ESP-IDF
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: v4.4.3
-          target: esp32
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git wget unzip python3-pip
+          pip install --upgrade pip
 
       - name: Setup components
         run: |
@@ -43,33 +39,36 @@ jobs:
           git clone --recursive https://github.com/espressif/esp-dl.git
           git clone --recursive https://github.com/espressif/tflite-micro-esp-examples.git tflite-micro
           cd tflite-micro
-          bash setup.sh
+          ./tensorflow/lite/micro/tools/ci_build/test_x86.sh
 
       - name: Build firmware with ESP-IDF
         run: |
+          . /opt/esp/idf/export.sh
           cd firmware
           idf.py set-target esp32
           idf.py build
+
+      - name: List build directory
+        run: |
+          ls -la firmware/build/
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
         with:
           name: firmware-binaries
           path: |
-            firmware/build/lodcp.bin
-            firmware/build/partition_table/partition-table.bin
-            firmware/build/bootloader/bootloader.bin
+            firmware/build/*.bin
+            firmware/build/partition_table/*.bin
+            firmware/build/bootloader/*.bin
           retention-days: 7
 
       - name: Create firmware bundle
         run: |
           mkdir -p firmware-bundle
-          cp firmware/build/lodcp.bin firmware-bundle/
-          cp firmware/build/partition_table/partition-table.bin firmware-bundle/
-          cp firmware/build/bootloader/bootloader.bin firmware-bundle/
-          cd firmware-bundle
-          zip -r ../firmware-bundle.zip .
-          cd ..
+          cp firmware/build/*.bin firmware-bundle/ || true
+          cp firmware/build/partition_table/*.bin firmware-bundle/ || true
+          cp firmware/build/bootloader/*.bin firmware-bundle/ || true
+          zip -r firmware-bundle.zip firmware-bundle/
 
       - name: Upload firmware bundle
         uses: actions/upload-artifact@v4
