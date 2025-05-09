@@ -65,7 +65,9 @@
 \numberwithin{equation}{section} % 按节编号
 
 % 设置引用样式为上标带方括号
-\renewcommand{\cite}[1]{[\supercite{#1}]}
+\newcommand{\mycite}[1]{\textsuperscript{[}\supercite{#1}\textsuperscript{]}}
+\let\oldcite\cite
+\renewcommand{\cite}[1]{\mycite{#1}}
 
 % 设置章节格式
 \newcommand{\sectionbreak}{\clearpage}
