@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import cv2
+import numpy as np
+from torchvision import transforms
+
 
 class EnhancedFastSCNN(nn.Module):
     def __init__(self, num_classes=2):
@@ -15,7 +19,7 @@ class EnhancedFastSCNN(nn.Module):
             nn.ReLU(),
             nn.Conv2d(64, 128, 3, stride=1, padding=1),  # 新增层
             nn.BatchNorm2d(128),
-            nn.ReLU()
+            nn.ReLU(),
         )
 
         # 通道注意力模块
@@ -24,13 +28,11 @@ class EnhancedFastSCNN(nn.Module):
             nn.Conv2d(128, 32, 1),
             nn.ReLU(),
             nn.Conv2d(32, 128, 1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
         # 轻量级分类头
-        self.classifier = nn.Sequential(
-            nn.Conv2d(128, num_classes, 1)
-        )
+        self.classifier = nn.Sequential(nn.Conv2d(128, num_classes, 1))
 
     def forward(self, x):
         # 下采样
@@ -41,7 +43,7 @@ class EnhancedFastSCNN(nn.Module):
         x = x * attn
 
         # 上采样
-        x = F.interpolate(x, scale_factor=4, mode='bilinear', align_corners=True)
+        x = F.interpolate(x, scale_factor=4, mode="bilinear", align_corners=True)
 
         # 分类输出
         return self.classifier(x)

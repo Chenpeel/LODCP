@@ -5,4 +5,4 @@
 
 
 
-![结构图](./docs/thesis/figures/chapter1/fig1-1.svg)
+![结构图](./docs/thesis/figures/chapter1/structure.png)
