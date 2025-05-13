@@ -4,7 +4,6 @@
 % 导入必要的宏包
 \usepackage{fontspec}
 \usepackage{graphicx}
-\usepackage{hyperref}
 \usepackage{titlesec}
 \usepackage{setspace}
 \usepackage{abstract}
@@ -24,6 +23,8 @@
 \usepackage{float}
 \usepackage{algorithm2e}
 \usepackage{algorithmic}
+\usepackage{titletoc}
+\usepackage{hyperref}
 
 % TikZ库
 \usetikzlibrary{matrix,shapes,arrows,positioning,decorations.pathreplacing,fit,backgrounds,calc,shapes.geometric,arrows.meta}
@@ -31,7 +32,7 @@
 % 设置行距
 \linespread{1.67} % 20磅固定行距
 \setlength{\baselineskip}{20pt} % 确保20磅的行距
-
+\AtBeginDocument{\normalsize}
 % 设置字体
 \setmainfont{Times New Roman}
 \setCJKmainfont[BoldFont="STHeiti"]{STSong} % 宋体
@@ -44,9 +45,119 @@
 \CTEXsetup[name={,}, number={\arabic{section}.\arabic{subsection}}]{subsection}
 \CTEXsetup[name={,}, number={\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}]{subsubsection}
 
+% 圆括号
+% 定义带圆括号的一级编号列表，保持与正文相同的格式和首行缩进
+% 列表环境统一设置
+\SetEnumitemKey{stdformat}{
+  align=left,
+  parsep=0pt,
+  itemsep=0pt,
+  topsep=0pt,
+  partopsep=0pt,
+  wide
+}
+
+% 不同级别列表的缩进控制
+\newcommand{\setuplistindent}[1]{%
+  \ifnum#1=1
+    % 最外层列表
+    \setlength{\parindent}{2em}%
+    \setlength{\itemindent}{2em}%
+    \setlength{\listparindent}{2em}%
+  \else
+    % 嵌套列表
+    \setlength{\parindent}{0em}%
+    \setlength{\itemindent}{0em}%
+    \setlength{\listparindent}{2em}%
+  \fi
+}
+
+% 圆括号列表
+\newlist{parlist}{enumerate}{3}
+\setlist[parlist,1]{
+  label=(\arabic*),
+  leftmargin=3em,
+  labelindent=2em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{1}}
+}
+\setlist[parlist,2]{
+  label=(\alph*),
+  leftmargin=2.5em,
+  labelindent=0em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{2}}
+}
+\setlist[parlist,3]{
+  label=(\roman*),
+  leftmargin=2.5em,
+  labelindent=0em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{3}}
+}
+
+% 圈数字列表
+\newlist{circledlist}{enumerate}{3}
+\setlist[circledlist,1]{
+  label={\protect\textcircled{\scriptsize\arabic*}},
+  leftmargin=3em,
+  labelindent=2em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{1}}
+}
+\setlist[circledlist,2]{
+  label={\protect\textcircled{\scriptsize\alph*}},
+  leftmargin=2.5em,
+  labelindent=0em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{2}}
+}
+\setlist[circledlist,3]{
+  label={\protect\textcircled{\scriptsize\roman*}},
+  leftmargin=2.5em,
+  labelindent=0em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{3}}
+}
+
+% 半括号列表
+\newlist{halfparlist}{enumerate}{3}
+\setlist[halfparlist,1]{
+  label=\arabic*),
+  leftmargin=3em,
+  labelindent=2em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{1}}
+}
+\setlist[halfparlist,2]{
+  label=\alph*),
+  leftmargin=2.5em,
+  labelindent=0em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{2}}
+}
+\setlist[halfparlist,3]{
+  label=\roman*),
+  leftmargin=2.5em,
+  labelindent=0em,
+  labelsep=0.5em,
+  stdformat,
+  font={\normalfont\setuplistindent{3}}
+}
+
+
+
 % 设置图表标题格式
-\captionsetup[figure]{font=small, labelsep=space} % 五号约为10.5pt
-\captionsetup[table]{font=small, labelsep=space} % 五号约为10.5pt
+\captionsetup[figure]{font={small,bf}, labelsep=space} % 五号约为10.5pt
+\captionsetup[table]{font={small,bf}, labelsep=space} % 五号约为10.5pt
 
 % 设置页眉页脚
 \pagestyle{fancy}
@@ -55,11 +166,47 @@
 \fancyfoot[C]{\fontsize{10.5pt}{12.6pt}\selectfont\songti \thepage} % 五号宋体
 \setlength{\headheight}{16pt}
 
-% 目录格式
-\renewcommand{\cftsecfont}{\bfseries\songti} % 一级标题黑体
-\renewcommand{\cftsecpagefont}{\bfseries\songti} % 页码也用黑体
-\renewcommand{\cftsubsecfont}{\songti} % 二级标题宋体
-\renewcommand{\cftsubsecpagefont}{\songti} % 页码也用宋体
+
+% 目录相关设置
+% 目录设置
+\titlecontents{section}
+  [0em]                       % 缩进
+  {\songti\zihao{-4}}         % 前导格式（小四宋体）
+  {\contentslabel{1em}}       % 带标签的内容格式
+  {\hspace*{-1em}}            % 不带标签的内容格式
+  {\titlerule*[0.5pc]{.}\contentspage} % 页码格式
+  []                          % 后导格式
+
+\renewcommand{\contentsname}{\heiti\zihao{3}目录}  % 黑体三号
+\renewcommand{\cfttoctitlefont}{\hfill\heiti\zihao{3}}
+\renewcommand{\cftaftertoctitle}{\hfill}
+% 设置目录格式
+\renewcommand{\cftsecfont}{\songti\zihao{-4}}      % 小四号宋体
+\renewcommand{\cftsubsecfont}{\songti\zihao{-4}}   % 小四号宋体
+\renewcommand{\cftsubsubsecfont}{\songti\zihao{-4}}% 小四号宋体
+
+\renewcommand{\cftsecpagefont}{\songti\zihao{-4}}  % 页码也用小四号宋体
+\renewcommand{\cftsubsecpagefont}{\songti\zihao{-4}}
+\renewcommand{\cftsubsubsecpagefont}{\songti\zihao{-4}}
+
+
+% 设置目录缩进
+\setlength{\cftsecindent}{0em}        % 一级标题无缩进
+\setlength{\cftsubsecindent}{1.5em}   % 二级标题缩进
+\setlength{\cftsubsubsecindent}{3em}  % 三级标题缩进
+
+% 目录项间距调整
+\setlength{\cftbeforesecskip}{0pt}    % 取消额外间距，保持固定行距
+\setlength{\cftbeforesubsecskip}{0pt}
+\setlength{\cftbeforesubsubsecskip}{0pt}
+
+% 目录项分散对齐设置
+\makeatletter
+\renewcommand{\@dotsep}{1.5}  % 点间距设置
+\renewcommand{\cftdot}{$\cdot$}  % 使用更小的点
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}  % 确保一级标题也有点引导符
+\makeatother
+
 
 % 公式编号
 \numberwithin{equation}{section} % 按节编号
@@ -71,8 +218,8 @@
 
 % 设置章节格式
 \newcommand{\sectionbreak}{\clearpage}
-\newlist{circledlist}{enumerate}{1}
-\setlist[circledlist]{label=\ding{\numexpr171+\value{circledlisti}\relax}}
+
+
 
 % 参考文献文件
 \addbibresource{references.bib}
@@ -84,9 +231,10 @@
 \begin{center}
 \vspace*{1cm}
 \includegraphics[width=\textwidth]{figures/title.png}
-
 \vspace*{1cm}
 {\Huge \textbf{本科毕业设计说明书（论文）}}
+% \vspace*{1cm}
+% \includegraphics[width=\textwidth]{figures/icon.png}
 \vspace{1.5cm}
 
 
@@ -112,11 +260,14 @@
 \end{titlepage}
 \thispagestyle{empty} % 标题页无页码和页眉
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+\pagenumbering{Roman}
 % 中文摘要页
 \newpage
+\phantomsection
 \begin{center}
 \Large\textbf{摘要}
 \end{center}
+\addcontentsline{toc}{section}{摘要}
 \vspace{2em}
 
 \setlength{\parindent}{2em} % 设置首行缩进
@@ -130,16 +281,18 @@
 
 
 \vspace{2em}
-\noindent\textbf{关键词：Fast-SCNN; YOLOv5; DeepSORT; IoU度量; 车道障碍检测; 碰撞预测}
+\noindent\textbf{关键词：Fast-SCNN， YOLOv5， DeepSORT， IoU度量， 车道障碍检测， 碰撞预测}
 \thispagestyle{fancy} % 中文摘要页使用自定义页眉页脚
 
 \clearpage
 
 % 英文摘要页
 \newpage
+\phantomsection
 \begin{center}
 \Large\textbf{ABSTRACT}
 \end{center}
+\addcontentsline{toc}{section}{ABSTRACT}
 \vspace{2em}
 
 \setlength{\parindent}{2em} % 设置首行缩进
@@ -153,18 +306,23 @@ For the common occlusion problems in multi-object tracking, this research optimi
 
 
 \vspace{2em}
-\noindent\textbf{Keywords: Fast-SCNN; YOLOv5; DeepSORT; IoU Measurement; Lane Obstacle Detection; Collision Prediction}
+\noindent\textbf{Keywords: Fast-SCNN, YOLOv5, DeepSORT, IoU Measurement, Lane Obstacle Detection, Collision Prediction}
 
-\thispagestyle{fancy} % 英文摘要页使用自定义页眉页脚
+\thispagestyle{fancy}
 
 \clearpage
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 % 目录
 \newpage
+\vspace{\baselineskip}
 \tableofcontents
-\thispagestyle{fancy} % 目录页使用自定义页眉页脚
+\thispagestyle{fancy}
 \clearpage
+
+
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+\pagenumbering{arabic}
+\setcounter{page}{1}
 % 正文内容开始
 \section{绪论}
 % 第一章的图表编号格式
@@ -184,7 +342,9 @@ For the common occlusion problems in multi-object tracking, this research optimi
 
 车道障碍物可分为人为与自然两类：前者包含行人、车辆等具有随机移动特征的动态障碍，后者指自然灾害引发的静态障碍。二者均可能引发碰撞事故，造成人员伤亡与财产损失。因此，实时检测与风险评估成为保障交通安全的关键。
 
-随着机器视觉与深度学习技术的突破，基于视频流的智能识别系统已日趋成熟。此类系统可对交通监控视频进行多目标定位与行为分析，通过语义分割确定道路边界，结合目标跟踪算法实现动态障碍物轨迹预测。本文提出一种基于视频序列的车道障碍物检测与碰撞概率预测方法，其技术流程包括： 1. 视频图像序列采集 2. 道路特征提取与语义分割 3. 基于深度学习的目标检测 4. 复杂场景多目标跟踪 5. 碰撞概率建模与分级预警。该系统采用二级预警机制，在保证识别效率（帧率≥30fps）的同时，将误报率控制在5\%以下。通过算法优化，部署成本降低60\%，可适配各类低成本车载安全装置。
+随着机器视觉与深度学习技术的突破，基于视频流的智能识别系统已日趋成熟。此类系统可对交通监控视频进行多目标定位与行为分析，通过语义分割确定道路边界，结合目标跟踪算法实现动态障碍物轨迹预测。
+
+本文提出一种基于视频序列的车道障碍物检测与碰撞概率预测方法，其具体技术流程包括视频图像序列采集、道路特征提取与语义分割、基于深度学习的目标检测、复杂场景多目标跟踪、碰撞概率建模与分级预警，采用三级级预警机制，在保证识别效率的同时，实现了对不同等级障碍物的碰撞风险预警。通过优化，部署成本较低，可适配各类低成本车载安全装置。
 
 \subsection{国内外研究进展}
 
@@ -223,12 +383,44 @@ For the common occlusion problems in multi-object tracking, this research optimi
 
 本文的技术路线如图\ref{fig:arch}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/chapter1/structure.png}
 \caption{技术路线图}
 \label{fig:arch}
 \end{figure}
+
+
+% \subsection{并发机制与生产者-消费者模型}
+% 生产者-消费者模型（Producer-Consumer Model）是并发程序设计中的经典模式，广泛应用于多线程或多进程系统的数据流管理。该模型的核心思想是将“生产数据”的任务与“消费数据”的任务解耦，通过一个共享的缓冲区（通常为队列）实现数据的有序传递和异步处理。每个处理阶段均设有专属的输入输出队列，任务之间通过条件变量和互斥锁进行同步，保证数据一致性和处理效率。该机制不仅提升了系统的并发能力，还便于各模块的独立扩展和维护。
+
+% 在该模型中，生产者负责不断生成数据并写入缓冲区，而消费者则从缓冲区中取出数据进行处理。二者通过同步机制（如互斥锁、信号量、条件变量等）协调对缓冲区的访问，防止出现数据竞争、死锁或资源浪费等问题。若缓冲区已满，生产者需等待消费者取走数据后才能继续生产；反之，若缓冲区为空，消费者需等待生产者产生新数据。这种机制不仅提升了系统的资源利用率，还能有效平衡各处理环节的负载，实现高效的数据流转。
+
+% 生产者-消费者模型的优势在于：
+% \begin{itemize}
+%     \item \textbf{解耦模块：} 生产者与消费者独立运行，便于系统扩展和维护。
+%     \item \textbf{提升并发性：} 多个生产者和消费者可并行工作，提高系统吞吐率。
+%     \item \textbf{缓冲与削峰：} 缓冲区起到“削峰填谷”作用，平滑数据流，适应负载波动。
+%     \item \textbf{容错与鲁棒性：} 某一环节短暂阻塞不会影响整体系统的持续运行。
+% \end{itemize}
+
+% 本文采用多线程流水线架构，将图像采集、车道线检测、目标检测、目标跟踪、碰撞时间计算等处理流程划分为多个独立阶段。每个阶段由专门的线程负责，彼此之间通过线程安全的队列（缓冲区）进行数据传递。
+
+% 具体而言，前端摄像头采集模块作为“生产者”，不断获取原始图像帧并推送到原始帧队列。随后，车道线检测、目标检测、目标跟踪等各处理线程既作为“消费者”，从上游队列中获取数据，又作为“生产者”将结果推送到下游队列，由碰撞预测模块线程处理。
+% 如图\ref{fig:pcm}所示，实现对资源的高效利用。
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{figures/chapter2/pcm.png}
+%     \caption{生产者-消费者模型}
+%     \label{fig:pcm}
+% \end{figure}
+
+% 为保证多线程环境下的数据安全与有序流转，系统实现了线程安全的队列结构，并通过互斥锁与条件变量等同步机制，防止数据竞争和死锁。例如，当某一处理阶段的队列为空时，消费者线程会自动阻塞等待新数据；当队列已满时，生产者线程则会等待，直到有空余空间。这种机制确保了各处理阶段既能高效并行，又能动态适应系统负载变化，避免了资源浪费和处理瓶颈。
+
+% 此外，通过多种帧缓存模式（如SD卡、RAM、混合模式），根据实际硬件资源动态切换，能够进一步提升了数据流的灵活性和鲁棒性。通过合理设计队列长度和线程数量，系统能够在高负载场景下保持稳定运行，实现了高效、实时的图像处理与碰撞风险评估。
+
+
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 \newpage
@@ -245,20 +437,22 @@ For the common occlusion problems in multi-object tracking, this research optimi
 
 \subsubsection{传统图像增强技术}
 
-\paragraph{去噪处理}
 
 数字图像在采集和传输过程中容易受到设备固有噪声、环境干扰等因素的影响，常见的噪声类型包括高斯噪声、椒盐噪声和泊松噪声等。去噪算法的核心在于平衡噪声抑制与图像细节保留，主要方法包括：
 
-\begin{enumerate}
-\item \textbf{中值滤波}：非线性滤波方法，通过滑动窗口内像素值的中位数替代中心像素。其优势在于有效抑制脉冲噪声的同时保持边缘清晰度，计算复杂度为$O(n^2)$，适用于中低分辨率图像处理。数学表达如式(1)：
+\begin{parlist}
+\item 中值滤波
+
+中值滤波（Medium Filter）是一种非线性滤波方法，通过滑动窗口内像素值的中位数替代中心像素。其优势在于有效抑制脉冲噪声的同时保持边缘清晰度，计算复杂度为$O(n^2)$，适用于中低分辨率图像处理。数学表达如式\eqref{eq:medium_filter}：
 
 \begin{equation}
+\label{eq:medium_filter}
 M(x,y) = \text{median}\{ f(i,j)|i \in \lbrack x - k,x + k\rbrack,j \in \lbrack y - k,y + k\rbrack\}
 \end{equation}
 
 其中窗口尺寸$k$需根据噪声强度与图像分辨率进行参数调优。在车辆前方障碍物检测中，$3 \times 3$窗口在保持实时性的同时可有效去除雨滴等干扰，如图\ref{fig:medium_filter}所示。
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/chapter2/medium_filtered.jpg}
 \begin{center}
@@ -268,14 +462,16 @@ M(x,y) = \text{median}\{ f(i,j)|i \in \lbrack x - k,x + k\rbrack,j \in \lbrack y
 \label{fig:medium_filter}
 \end{figure}
 
-\item \textbf{高斯滤波}：线性平滑方法，采用高斯核函数进行加权平均，特别适合处理符合正态分布的噪声。二维高斯函数表达式为：
+\item 高斯滤波
 
+高斯滤波（Gaussian Filter）是一种线性平滑方法，采用高斯核函数进行加权平均，二维高斯函数如式\eqref{eq:guass_kernel}，特别适合处理图像中符合正态分布的噪声。
 \begin{equation}
+\label{eq:guass_kernel}
 G(x,y) = \frac{1}{2\pi\sigma^2}e^{-\frac{x^2+y^2}{2\sigma^2}}
 \end{equation}
 
-标准差$\sigma$决定平滑强度。在夜间驾驶场景中，$\sigma=1.8$可有效平衡噪声抑制与边缘保留，如图\ref{fig:gauss_filtered}。
-\begin{figure}[htbp]
+标准差$\sigma$决定了平滑强度，较大的$\sigma$可能造成对边缘信息的模糊，而较小的$\sigma$对噪声的抑制不稳定，通过测试，在夜间驾驶场景中，$\sigma=1.8$可有效平衡噪声抑制与边缘保留，如图\ref{fig:gauss_filtered}。
+\begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/chapter2/gauss_filtered.jpg}
 \begin{center}
@@ -285,24 +481,30 @@ G(x,y) = \frac{1}{2\pi\sigma^2}e^{-\frac{x^2+y^2}{2\sigma^2}}
 \label{fig:gauss_filtered}
 \end{figure}
 
-\item \textbf{双边滤波}：结合空间域和像素值域的非线性滤波方法，能够在平滑图像的同时保持边缘信息：
+\item 双边滤波
+
+双边滤波（Bilateral Filter）结合空间域和像素值域的非线性滤波方法，如式\eqref{eq:bilateral_filter}能够在平滑图像的同时保持边缘信息，与高斯滤波不同，双边滤波的权重依赖于图像本身内容，能够有效应对传统高斯滤波中的边缘丢失问题。
 
 \begin{equation}
+\label{eq:bilateral_filter}
 BF[I]_p = \frac{1}{W_p}\sum_{q \in S}G_{\sigma_s}(||p-q||)G_{\sigma_r}(|I_p-I_q|)I_q
 \end{equation}
 
-其中，$G_{\sigma_s}$为空间核，$G_{\sigma_r}$为值域核，适用于需要保留清晰边界的场景，如车道线检测。
+其中，$G_{\sigma_s}$为空间核，$G_{\sigma_r}$为值域核，通过该滤波处理，边缘信息能够有效保留。
 
-\item \textbf{各向异性扩散滤波}：基于偏微分方程的自适应滤波方法，能够根据局部梯度调整平滑强度，公式如下：
+\item 各向异性扩散滤波
+
+各向异性扩散滤波（Anisotropic Diffusion Filtering）是基于偏微分方程的自适应滤波方法，能够根据局部梯度调整平滑强度，其核心是时变偏微分方程如式\eqref{eq:adf}，通过非跨越式的边缘扩散，自适应调节局部结构，多次迭代可以获得图像多尺度特征，从而适应非均匀光照环境的图像。
 
 \begin{equation}
+\label{eq:adf}
 \frac{\partial I}{\partial t} = \text{div}(c(|\nabla I|)\nabla I)
 \end{equation}
 
 其中$c(\cdot)$为扩散系数，在边缘处减小扩散以保持结构特征，效果如图\ref{fig:ani_diffusion}所示。
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
-\includegraphics[width=1\textwidth]{figures/chapter2/ani_diffusion.png}
+\includegraphics[width=1\textwidth]{figures/chapter2/adf.png}
 \begin{center}
 (a) 噪声图像 \hspace{3cm} (b) 各向异性扩散滤波
 \end{center}
@@ -310,18 +512,17 @@ BF[I]_p = \frac{1}{W_p}\sum_{q \in S}G_{\sigma_s}(||p-q||)G_{\sigma_r}(|I_p-I_q|
 \label{fig:ani_diffusion}
 \end{figure}
 
-\end{enumerate}
+\end{parlist}
 
-在实际车载系统开发中，需根据传感器特性和环境条件选择适配的滤波策略：CMOS相机受限于传感器特性易产生椒盐噪声，多采用中值滤波预处理；而在低光照条件下，高斯滤波结合亮度自适应阈值可提升夜间视觉效果；对于需要实时处理的场景，可采用积分图技术加速均值滤波，将复杂度降至$O(1)$。
+在实际车载系统开发中，需根据传感器特性和环境条件选择适配的滤波策略，本文采用的CMOS相机受限于传感器特性易产生椒盐噪声，采用中值滤波预处理；而在低光照条件下，高斯滤波结合亮度自适应阈值可提升夜间视觉效果；对于需要实时处理的场景，可采用积分图技术加速均值滤波，将复杂度降至$O(1)$；对于道路常见的光照不均匀场景，采用各向异性扩散滤波获取更优的特征。
 
-\subsubsection{形态学运算与边缘检测}
+\subsubsection{形态学运算}
 
-\paragraph{形态学处理}
 
-形态学处理通过结构化元素操作改变目标区域的拓扑结构，在车道标记和障碍物分割中具有重要应用：
+形态学处理通过结构化元素操作改变目标区域的拓扑结构，在车道标记和障碍物分割中具有重要应用，其能够连接断裂的车道线、填补路面裂缝反光等
 
-\begin{enumerate}
-\item \textbf{腐蚀运算}：
+\begin{parlist}
+\item 腐蚀运算
 
 \begin{equation}
 (A \ominus B)(i,j) = \min_{(x,y) \in B}\{ A(i + x,j + y)\}
@@ -329,15 +530,15 @@ BF[I]_p = \frac{1}{W_p}\sum_{q \in S}G_{\sigma_s}(||p-q||)G_{\sigma_r}(|I_p-I_q|
 
 可消除细小噪点但导致目标收缩，在车道线检测中用于分离粘连标记和过滤小面积干扰物。使用$3 \times 3$方形结构元素可去除大部分的环境噪点。
 
-\item \textbf{膨胀运算}：
+\item 膨胀运算
 
 \begin{equation}
 (A \oplus B)(i,j) = \max_{(x,y) \in B}\{ A(i + x,j + y)\}
 \end{equation}
 
-用于填补目标区域空洞，增强障碍物轮廓连续性。在车道线重构中，使用线状结构元素可有效连接断裂的标线段。
+膨胀处理能够有效填补目标区域空洞，增强障碍物轮廓连续性，线状结构元素可有效连接断裂的标线段。
 
-\item \textbf{开运算与闭运算}：
+\item 开运算与闭运算
 
 \begin{equation}
 A \circ B = (A \ominus B) \oplus B
@@ -346,9 +547,9 @@ A \circ B = (A \ominus B) \oplus B
 A \bullet B = (A \oplus B) \ominus B
 \end{equation}
 
-开运算可去除传感器数据中的孤立噪声，闭运算适用于修补检测盲区。
+开运算是对图像先进行腐蚀再进行膨胀，能够有效的消除图像中的小尺寸亮区，从而去除孤立噪声；而闭运算则是对图像先进行膨胀后腐蚀，其特性适用于连接细小缝隙和填补小型凹陷，适用于修补检测盲区。这两种操作都能保持大型物体形状和大小基本不变，实现对图像细小部分的处理。
 
-\item \textbf{顶帽变换与底帽变换}：
+\item 顶帽变换与底帽变换
 
 \begin{equation}
 \text{TopHat}(A) = A - (A \circ B)
@@ -358,25 +559,31 @@ A \bullet B = (A \oplus B) \ominus B
 \end{equation}
 
 顶帽变换用于提取比背景亮的细小目标，如白色车道线；底帽变换则用于高精度情形下检测黑色物体，如沥青路面上的裂缝。
-\end{enumerate}
+\end{parlist}
 
-\paragraph{边缘检测}
 
-边缘检测作为自动驾驶环境感知的核心技术，能够快速识别场景中的结构特征：
+\subsubsection{边缘检测}
 
-\begin{enumerate}
-\item \textbf{Canny算子}：通过高斯平滑、梯度计算、非极大值抑制和双阈值检测四步实现，在复杂路况中可保持连续边缘特征。处理流程为：
+边缘提取作为计算机视觉中的基础技术，通过提取图像的轮廓信息，实现特征的有效增强。这一技术广泛应用于计算机视觉、模式识别以及数字影像处理等领域。随着技术发展，边缘检测算法已经从传统的手工设计特征逐步演进至结合深度学习的智能方法。目前，主流的边缘检测算法大致可以分为五类：
 
-\begin{itemize}
-\item 高斯滤波去除噪声
-\item 使用Sobel算子计算梯度幅值和方向
-\item 非极大值抑制细化边缘
-\item 双阈值法确定边缘连接性
-\end{itemize}
+\begin{halfparlist}
+    \item 基于一阶梯度的检测算法，如Sobel、Prewitt算子，通过计算像素值梯度的幅值与方向识别边界；
 
-实验表明，在低阈值$0.1$和高阈值$0.3$的设置下，对车道线的检测准确率达$92.3\%$。
+    \item 基于二阶导数的检测算法，采用拉普拉斯等二阶差分运算定位边缘区域，如LoG（Laplacian of Gaussian）；
 
-\item \textbf{Sobel算子}：基于一阶导数的梯度算子，使用分离卷积核加速计算：
+    \item 基于Canny准则的多阶段算法，通过系统化处理实现亚像素级边缘提取；
+
+    \item 基于多尺度分析的高级方法，如DoG（高斯差分）和小波变换，能够捕获不同尺度的边缘特征；
+
+    \item 基于深度学习的端到端方法，如HED、RCF和DexiNed，直接从数据中学习边缘特征表示。
+\end{halfparlist}
+
+
+\begin{parlist}
+
+\item Sobel算子
+
+基于一阶导数的梯度算子，使用分离卷积核加速计算：
 
 \begin{equation}
 G_x = \begin{bmatrix} -1 & 0 & +1 \\ -2 & 0 & +2 \\ -1 & 0 & +1 \end{bmatrix} * A
@@ -389,8 +596,9 @@ G = \sqrt{G_x^2 + G_y^2}
 \end{equation}
 
 
+\item 拉普拉斯算子
 
-\item \textbf{拉普拉斯算子}：基于二阶导数的边缘检测方法：
+基于二阶导数的边缘检测方法：
 
 \begin{equation}
 \nabla^2 f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2}
@@ -404,24 +612,60 @@ G = \sqrt{G_x^2 + G_y^2}
 
 对噪声敏感但能检测到闭合轮廓，通常与高斯滤波组合使用（LoG算子）。
 
-\item \textbf{Gabor滤波器}：方向敏感的纹理分析工具，可以有针对性地增强特定方向的边缘特征：
+
+\item Canny算子
+
+Canny边缘检测算子（Canny Edge Detector）通过多阶段处理实现对图像中边缘的精确定位，在复杂路况中可保持连续边缘特征。处理流程为：
+
+\begin{circledlist}
+\item 高斯滤波去除噪声
+\item 使用Sobel算子计算梯度幅值和方向
+\item 非极大值抑制细化边缘
+\item 双阈值法确定边缘连接性
+\end{circledlist}
+
+\item 多尺度DoG边缘检测
+
+高斯差分（DoG）算子通过计算不同尺度高斯滤波的差值检测边缘，其数学表达式为：
 
 \begin{equation}
-g(x,y;\lambda,\theta,\psi,\sigma,\gamma) = \exp\left(-\frac{x'^2+\gamma^2y'^2}{2\sigma^2}\right)\cos\left(2\pi\frac{x'}{\lambda}+\psi\right)
+DoG(x,y,\sigma_1,\sigma_2) = G(x,y,\sigma_1) - G(x,y,\sigma_2)
 \end{equation}
 
-其中$x' = x\cos\theta + y\sin\theta$，$y' = -x\sin\theta + y\cos\theta$
+该方法采用多组$\sigma$值（如$(1.0,2.0)$、$(2.0,4.0)$和$(3.0,6.0)$），能够同时捕获不同宽度和清晰度的边缘。小尺度的高斯差分保留细节信息，适合检测清晰的近距离边缘；中等尺度平衡细节与噪声抑制；大尺度则适用于模糊或远处边缘。多尺度融合策略利用不同尺度信息的互补性，显著提升检测完整性。
 
-在检测不同角度的车道线时，通过调整$\theta$参数可实现多方向特征提取，提高检测鲁棒性。
+\item 基于深度学习的边缘检测
 
-\item \textbf{多项式曲线拟合}：在获取边缘点后，通过最小二乘法拟合车道线数学模型：
+深度学习方法通过卷积神经网络实现端到端的边缘检测，代表算法包括：
 
+\begin{circledlist}
+\item HED (Holistically-Nested Edge Detection)：利用全卷积网络和深度监督机制，同时结合浅层特征和深层语义信息
+\item RCF (Richer Convolutional Features)：整合多层卷积特征，提升边缘检测的精度和语义理解能力
+\item DexiNed (Dense Extreme Inception Network)：通过创新的网络结构实现无需预训练的高精度边缘检测
+\end{circledlist}
+
+深度学习方法的优势在于能够从数据中自动学习边缘特征表示，区分有语义意义的边缘与无意义的纹理，在复杂场景中表现出优越性能。
+
+\item 混合架构方法
+
+结合传统边缘检测与深度学习的混合架构，形成"白盒+黑盒"的智能系统：
+
+\begin{equation}
+E_{final} = \alpha \cdot E_{traditional} + (1-\alpha) \cdot E_{deep}
+\end{equation}
+
+其中$\alpha$为自适应权重系数。这种方法融合了传统算法的可解释性和深度学习的高精度特性，通过互补优势提升系统在复杂环境下的鲁棒性。在实际应用中，传统边缘检测方法提供几何约束，深度学习方法提供语义理解，通过熵阈值等机制动态选择最可靠的结果。
+\end{parlist}
+
+
+\item 多项式曲线拟合
+在获取边缘点后，通过最小二乘法拟合车道线数学模型：
 \begin{equation}
 y = a_0 + a_1x + a_2x^2 + a_3x^3
 \end{equation}
 
 $3$次多项式模型可有效描述弯道曲率，为车道偏离预警提供数学基础如图\ref{fig:polynomial_fit}所示。
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/chapter2/polynomial_fit.png}
 \begin{center}
@@ -430,7 +674,7 @@ $3$次多项式模型可有效描述弯道曲率，为车道偏离预警提供�
 \caption{多项式拟合车道线}
 \label{fig:polynomial_fit}
 \end{figure}
-\end{enumerate}
+\end{parlist}
 
 
 
@@ -501,8 +745,8 @@ r_{ij} = \frac{exp(s_{ij})}{\sum_{k}^{}\exp(s_{ik})},\quad s_{ij} = \langle W_{q
 
 作为实时目标检测领域的里程碑式算法，YOLO (You Only Look Once) 系列通过单阶段端到端的检测范式重新定义了计算机视觉任务的效率标准。
 YOLOv5作为该系列的重要迭代，在保持实时性的同时显著提升了检测精度，特别适合计算资源受限的车载环境。
-
-\paragraph{理论基础与架构演进}
+\begin{parlist}
+\item 理论基础与架构演进
 
 YOLOv5的核心理论基础建立在单阶段检测器的创新模型上，其通过将目标检测问题转化为回归问题，实现了端到端的推理过程。
 与两阶段检测器（如R-CNN系列）不同，YOLOv5直接从输入图像预测边界框坐标和类别概率，避免了候选区域生成和二次分类的计算开销。其理论框架可表述为：
@@ -519,7 +763,7 @@ YOLOv5架构引入多项关键创新，包括CSP结构、PANet特征融合、Foc
 Y = Concat(Conv_{1 \times 1}(X_1), BottleNeck(X_2))
 \end{equation}
 
-\paragraph{多尺度检测机制}
+\item 多尺度检测机制
 
 YOLOv5针对交通场景中远近目标共存的特点，设计了三级检测头结构，实现全尺度目标的有效捕获：
 
@@ -539,10 +783,10 @@ P_s &= Conv(Upsample(P_m) \oplus Backbone_{stage3})
 
 这种双向特征融合机制显著增强了模型对不同尺度目标的检测能力，在车载环境中能够同时精确识别远处的行人和近处的车辆。
 
-\paragraph{模型系列与轻量化设计}
+\item 模型系列与轻量化设计
 
 YOLOv5提供了不同复杂度的模型变体（YOLOv5n/s/m/l/x），但无论哪种模型，其Backbone，Neck，Output都是一致的，区别在于模型深度和宽度设置。如图\ref{fig:yolov5-comparison}所示。
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/chapter2/yolov5.png}
 \caption{YOLOv5模型在COCO数据集测试结果}
@@ -550,7 +794,7 @@ YOLOv5提供了不同复杂度的模型变体（YOLOv5n/s/m/l/x），但无论�
 \end{figure}
 
 各个尺度的预训练参数如表\ref{tab:yolov5-params}所示。
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{YOLOv5模型系列参数对比}
 \label{tab:yolov5-params}
@@ -571,7 +815,7 @@ YOLOv5x & 86.7M & 205.7 & 68.9\% & 65 \\
 本研究采用YOLOv5n为基础，结合车载场景的特点进行了针对性优化，包括类别优先级差异化、注意力增强模块和多帧时序融合等技术。
 
 另外使用了YOLOv5s模型作为蒸馏的教师模型，对YOLOv5n低参数模型进行优化，有效提高了对车载环境下障碍物的检测能力，同时降低了部署于边缘的资源消耗。
-\paragraph{损失函数优化}
+\item 损失函数优化
 
 作为检测性能的关键驱动因素，采用EIoU（Efficient Intersection over Union）损失函数改进边界框回归精度。针对传统IoU度量对边界框尺度不敏感的问题，EIoU通过引入中心点距离惩罚项和宽高差异补偿机制，构建了更符合目标检测任务特性的回归目标：
 
@@ -580,34 +824,51 @@ YOLOv5x & 86.7M & 205.7 & 68.9\% & 65 \\
 \end{equation}
 
 其中$\rho(\cdot)$表示欧氏距离，$c$为最小包围框对角线长度，$c_w$、$c_h$为包围框宽高。与CIoU相比，EIoU解耦了宽高方向的梯度更新，使网络能够更精确地学习目标几何特征。
-
+\end{parlist}
 
 
 \subsubsection{目标跟踪算法DeepSORT}
 
-\paragraph{目标跟踪算法发展}
+\begin{parlist}
+
+
+\item 目标跟踪算法发展
 
 目标跟踪是计算机视觉领域的核心研究方向，其目的是在连续视频帧序列中确定目标物体的运动轨迹。随着智能驾驶、视频监控等应用场景的快速发展，多目标跟踪技术经历了从传统方法到深度学习方法的演进过程。
 
 早期的目标跟踪主要聚焦于单目标场景，采用基于高斯模型的背景差分、基于边缘和颜色的形状描述符等方法。然而，这些传统方法在复杂环境下表现不佳，特别是在目标遮挡、快速运动、光照变化等挑战性场景中往往失效。多目标跟踪技术的出现，旨在同时追踪多个运动目标并维持其身份一致性，但初期的多目标跟踪算法仍面临精度与实时性的平衡问题。
 
 
-\paragraph{DeepSORT算法架构与工作原理}
+\item{DeepSORT算法架构与工作原理}
 
 DeepSORT（Deep Simple Online and Realtime Tracking）算法是由Wojke等人在2017年提出的多目标跟踪算法\cite{wojke2017simple}，它在原有SORT算法的基础上引入深度学习特征提取模块，构建了一个高效且鲁棒的跟踪系统。该算法采用"检测-跟踪"范式，具有模块化架构，主要包含以下四个核心组件：
 
-\begin{enumerate}
-    \item \textbf{检测关联模块}：DeepSORT首先利用目标检测器（如YOLO、Faster R-CNN等）获取每帧图像中的目标检测框，然后将当前帧的检测结果与现有轨迹进行关联。关联过程采用级联匹配策略，通过计算检测框与轨迹之间的马氏距离（spatial distance）和外观特征距离（appearance feature distance）的加权组合，构建代价矩阵，并使用匈牙利算法求解最优匹配问题。
+\begin{circledlist}
+    \item 检测关联模块
 
-    \item \textbf{卡尔曼滤波模块}：对每个跟踪目标，DeepSORT维护一个卡尔曼滤波器，用于估计目标的运动状态（包括位置、速度等）。卡尔曼滤波器包含预测和更新两个阶段：预测阶段根据上一时刻的状态推测当前状态；更新阶段根据实际测量值修正状态估计。这一机制使算法能够有效处理目标短时遮挡和检测失败的情况。
+    DeepSORT首先利用目标检测器（如YOLO、Faster R-CNN等）获取每帧图像中的目标检测框，然后将当前帧的检测结果与现有轨迹进行关联。关联过程采用级联匹配策略，通过计算检测框与轨迹之间的马氏距离（spatial distance）和外观特征距离（appearance feature distance）的加权组合，构建代价矩阵，并使用匈牙利算法求解最优匹配问题。
 
-    \item \textbf{外观特征提取模块}：DeepSORT的核心创新在于引入了深度学习特征提取网络，该网络通常采用具有度量学习能力的卷积神经网络，如在行人重识别数据集上预训练的Siamese网络。对每个检测框区域，特征提取网络生成固定维度的特征向量，用于计算目标间的外观相似度，这极大提高了算法在复杂场景中区分相似目标的能力。
+    \item 卡尔曼滤波模块
 
-    \item \textbf{轨迹管理模块}：该模块负责轨迹的初始化、维护和终止。当检测到新目标且无法与现有轨迹关联时，算法会初始化一个新轨迹；连续多帧未能关联到检测结果的轨迹会被标记为丢失，并在达到预设阈值后终止。轨迹管理机制还包含轨迹平滑和抑制短期误检测的策略，提高了算法的稳定性。
-\end{enumerate}
+    对每个跟踪目标，DeepSORT维护一个卡尔曼滤波器，用于估计目标的运动状态（包括位置、速度等）。卡尔曼滤波器包含预测和更新两个阶段：预测阶段根据上一时刻的状态推测当前状态；更新阶段根据实际测量值修正状态估计。这一机制使算法能够有效处理目标短时遮挡和检测失败的情况。
 
-DeepSORT算法相比传统方法具有以下显著优势：\textbf{鲁棒性增强}，通过融合深度学习特征与运动信息，能够在目标遮挡、外观相似等复杂场景下保持稳定的跟踪表现；\textbf{身份保持能力}，深度特征的引入大幅减少了ID切换（identity switch）现象；\textbf{实时处理能力}，在主流硬件上可达到实时或近实时性能；以及\textbf{模块化设计}，便于针对特定应用场景进行定制化改进。
+    \item 外观特征提取模块
+
+    DeepSORT的核心创新在于引入了深度学习特征提取网络，该网络通常采用具有度量学习能力的卷积神经网络，如在行人重识别数据集上预训练的Siamese网络。对每个检测框区域，特征提取网络生成固定维度的特征向量，用于计算目标间的外观相似度，这极大提高了算法在复杂场景中区分相似目标的能力。
+
+    \item 轨迹管理模块
+
+    负责轨迹的初始化、维护和终止。当检测到新目标且无法与现有轨迹关联时，算法会初始化一个新轨迹；连续多帧未能关联到检测结果的轨迹会被标记为丢失，并在达到预设阈值后终止。轨迹管理机制还包含轨迹平滑和抑制短期误检测的策略，提高了算法的稳定性。
+\end{circledlist}
+
+DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通过融合深度学习特征与运动信息，能够在目标遮挡、外观相似等复杂场景下保持稳定的跟踪表现；身份保持能力，深度特征的引入大幅减少了ID切换（identity switch）现象；实时处理能力，在主流硬件上可达到实时或近实时性能；以及模块化设计，便于针对特定应用场景进行定制化改进。
 在实际应用中，DeepSORT已广泛应用于智能交通系统、视频监控、行人分析及智能驾驶等领域。特别在智能驾驶场景中，DeepSORT能有效跟踪周围车辆、行人等交通参与者，为路径规划和碰撞预警提供关键信息支持。
+
+\end{parlist}
+
+
+
+
 
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
@@ -620,16 +881,7 @@ DeepSORT算法相比传统方法具有以下显著优势：\textbf{鲁棒性增�
 \section{车道规划}
 \subsection{车道线提取}
 
-边缘提取是计算机视觉中的基础处理技术，通过提取图像轮廓信息实现特征增强，广泛应用于计算机视觉、模式识别和数字影像处理领域。目前主流边缘检测算法可归纳为三类：
-
-\begin{enumerate}
-    \item \textbf{基于梯度的检测算法}：如Sobel、Prewitt算子，通过计算像素值梯度的幅值与方向识别边界；
-
-    \item \textbf{基于Laplacian的检测算法}：采用二阶差分运算定位边缘区域，代表性算法包括拉普拉斯算子及其改进型LoG（Laplacian of Gaussian）；
-
-    \item \textbf{基于Canny准则的检测算法}：通过灰度计算、梯度处理、非极大值抑制和双阈值检测四个步骤，实现亚像素级精度的连续边缘提取。
-\end{enumerate}
-
+对于车道线的提取以及车辆预行区域的规划，是整个系统的核心环节。其结果直接影响碰撞预测的准确性。因此，相关处理的精度和鲁棒性至关重要。
 本研究针对车道线检测任务构建了多阶段处理框架，如算法\ref{alg:lane_detection}所示。该框架结合了传统图像处理与现代计算机视觉技术，显著提高了车道线检测的准确性与鲁棒性。
 
 
@@ -640,35 +892,32 @@ DeepSORT算法相比传统方法具有以下显著优势：\textbf{鲁棒性增�
 \REQUIRE 道路场景图像 $Input Image$
 \ENSURE 车道线参数 $P_{left}$, $P_{right}$
 
-\STATE \textbf{颜色分割}：提取图像中的黄色和白色区域
+\STATE 颜色分割：提取图像中的黄色和白色区域
 \begin{align*}
     M_{color} &= ColorSegmentation(I)
 \end{align*}
 
-\STATE \textbf{多尺度DoG边缘检测}：应用不同尺度的高斯差分
+\STATE 多尺度DoG边缘检测：应用不同尺度的高斯差分
 \begin{align*}
     E_{dog} &= \bigcup_{i=1}^{n} DoG(G_{\sigma_{1i}}(M_{color}), G_{\sigma_{2i}}(M_{color}))
 \end{align*}
 
-\STATE \textbf{边缘增强}：通过形态学运算优化边缘
+\STATE 边缘增强：通过形态学运算优化边缘
 \begin{align*}
     E_{enhanced} &= Morphology(E_{dog})
 \end{align*}
 
-
-\STATE \textbf{区域限定}：应用ROI掩码
+\STATE 区域限定：应用ROI掩码
 \begin{align*}
     E_{roi} &= E_{enhanced} \cap M_{roi}
 \end{align*}
 
-
-\STATE \textbf{直线检测}：霍夫变换检测直线段
+\STATE 直线检测：霍夫变换检测直线段
 \begin{align*}
     L_{left}, L_{right} &= HoughLinesP(E_{roi})
 \end{align*}
 
-
-\STATE \textbf{车道线拟合}：多项式拟合
+\STATE 车道线拟合：多项式拟合
 \begin{align*}
     P_{left} &= PolyFit(L_{left}, 2) \\
     P_{right} &= PolyFit(L_{right}, 2)
@@ -684,67 +933,67 @@ DeepSORT算法相比传统方法具有以下显著优势：\textbf{鲁棒性增�
 \subsubsection{颜色分割}
 将RGB图像转换为HSV色彩空间，提取车道线区域（主要是黄色和白色），如图\ref{fig:color_seg}所示。HSV色彩空间对光照变化不敏感，能有效减少背景干扰。与RGB空间相比，HSV空间更有效地分离色相、饱和度和亮度信息，使算法在不同照明条件下保持较高鲁棒性。经过颜色分割后，路面纹理、周围车辆和地面阴影等干扰元素得到显著抑制，为边缘检测提供高质量输入。
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.8\textwidth]{figures/chapter3/1_color_segmentation.png}
-        \begin{center}
-        (a) 原始图像 \hspace{3cm} (b) 颜色分割结果
-        \end{center}
-        \caption{颜色分割处理效果图}
-        \label{fig:color_seg}
-    \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chapter3/1_color_segmentation.png}
+    \begin{center}
+    (a) 原始图像 \hspace{3cm} (b) 颜色分割结果
+    \end{center}
+    \caption{颜色分割处理效果图}
+    \label{fig:color_seg}
+\end{figure}
 
 \subsubsection{多尺度DoG边缘检测}
 
 如图\ref{fig:dog_edge}所示，高斯差分（DoG）算子通过计算不同尺度高斯滤波的差值检测边缘。采用多组$\sigma$值（$(1.0,2.0)$、$(2.0,4.0)$和$(3.0,6.0)$），捕获不同宽度和清晰度的车道线。小尺度的高斯差分保留细节信息，适合检测近处清晰的车道线；中等尺度平衡细节与噪声抑制；大尺度则应对模糊或磨损的远处车道线。多尺度融合策略利用不同尺度信息的互补性，显著提升检测完整性。
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.8\textwidth]{figures/chapter3/2_dog_edge_detection.png}
-        \begin{center}
-        (a) 颜色分割结果 \hspace{3cm} (b) DoG边缘检测结果
-        \end{center}
-        \caption{多尺度DoG边缘检测效果图}
-        \label{fig:dog_edge}
-    \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chapter3/2_dog_edge_detection.png}
+    \begin{center}
+    (a) 颜色分割结果 \hspace{3cm} (b) DoG边缘检测结果
+    \end{center}
+    \caption{多尺度DoG边缘检测效果图}
+    \label{fig:dog_edge}
+\end{figure}
 
 \subsubsection{边缘增强}
 
 通过形态学处理增强边缘连续性，解决车道线断裂或模糊问题，如图\ref{fig:edge_enhance}所示。首先应用顶帽变换突出比周围区域亮的细节结构；随后的闭运算（先膨胀后腐蚀）填充微小间隙，连接相近边缘点；开运算（先腐蚀后膨胀）去除孤立噪点；最后的膨胀操作增强边缘可见度。这一多阶段形态学处理显著提高了车道线的完整性和连贯性，为几何分析奠定基础。
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.8\textwidth]{figures/chapter3/3_edge_enhancement.png}
-        \begin{center}
-        (a) DoG边缘检测结果 \hspace{3cm} (b) 形态学增强后结果
-        \end{center}
-        \caption{边缘增强处理效果图}
-        \label{fig:edge_enhance}
-    \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chapter3/3_edge_enhancement.png}
+    \begin{center}
+    (a) DoG边缘检测结果 \hspace{3cm} (b) 形态学增强后结果
+    \end{center}
+    \caption{边缘增强处理效果图}
+    \label{fig:edge_enhance}
+\end{figure}
 
 \subsubsection{区域限定}
 
 定义梯形ROI（感兴趣区域），如图\ref{fig:roi}所示，仅保留图像下部可能含车道线的区域。梯形上部较窄对应远处汇聚的车道线，下部较宽匹配近处分散的车道线。区域限定不仅降低了计算复杂度，提高算法实时性，还有效排除了图像上部的天空、建筑物和植被等非关键区域。图\ref{fig:roi_mask}展示ROI蒙版应用效果。
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.8\textwidth]{figures/chapter3/roi_comparison.png}
-        \begin{center}
-        (a) 原始图像 \hspace{3cm} (b) ROI区域可视化
-        \end{center}
-        \caption{ROI区域定义图}
-        \label{fig:roi}
-    \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chapter3/roi_comparison.png}
+    \begin{center}
+    (a) 原始图像 \hspace{3cm} (b) ROI区域可视化
+    \end{center}
+    \caption{ROI区域定义图}
+    \label{fig:roi}
+\end{figure}
 
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.8\textwidth]{figures/chapter3/4_roi_masking.png}
-        \begin{center}
-        (a) 边缘增强结果 \hspace{3cm} (b) ROI掩码应用结果
-        \end{center}
-        \caption{ROI掩码应用效果图}
-        \label{fig:roi_mask}
-    \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chapter3/4_roi_masking.png}
+    \begin{center}
+    (a) 边缘增强结果 \hspace{3cm} (b) ROI掩码应用结果
+    \end{center}
+    \caption{ROI掩码应用效果图}
+    \label{fig:roi_mask}
+\end{figure}
 
 \subsubsection{直线检测}
 
@@ -796,13 +1045,13 @@ DeepSORT算法相比传统方法具有以下显著优势：\textbf{鲁棒性增�
 
 \subsubsection{预处理}
 数据预处理是确保模型训练效果的关键环节。本研究使用KITTI数据集提供的二值掩码作为标注，并设计了专门的数据加载和增强流程。首先，通过自定义KittiRoadDataset类实现高效数据读取与管理，建立图像与掩码间的映射关系。针对训练过程，引入多种数据增强策略以提高模型泛化能力：
-
-1. 尺寸调整：将图像统一调整至320×800分辨率，符合FastSCNN输入要求，同时保持足够细节信息；
-2. 水平翻转：以50\%概率应用，增加训练样本多样性；
-3. 亮度和对比度调整：随机变换图像亮度与对比度，模拟不同光照条件；
-4. 高斯噪声：添加随机噪点，提高模型抗噪能力；
-5. 标准化：应用ImageNet预训练模型的均值和标准差进行标准化，加速收敛。
-
+\begin{circledlist}
+\item 尺寸调整：将图像统一调整至320×800分辨率，符合FastSCNN输入要求，同时保持足够细节信息；
+\item 水平翻转：以50\%概率应用，增加训练样本多样性；
+\item 亮度和对比度调整：随机变换图像亮度与对比度，模拟不同光照条件；
+\item 高斯噪声：添加随机噪点，提高模型抗噪能力；
+\item 标准化：应用ImageNet预训练模型的均值和标准差进行标准化，加速收敛。
+\end{circledlist}
 数据集按8:2比例划分为训练集和验证集，确保模型在训练过程中得到有效评估。这些预处理步骤不仅提高了训练数据质量和多样性，还显著改善了模型的学习效率和泛化能力。
 
 \subsubsection{模型训练}
@@ -877,12 +1126,12 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 
 为了适应训练资源限制并提高训练效率，选择使用BDD100K数据集的一半数据进行训练和验证。数据预处理主要包括以下步骤：
 
-\begin{enumerate}
+\begin{circledlist}
     \item 图像筛选与分割：将原始数据集按照训练集和验证集进行划分，并随机抽样以获取所需比例的数据。
     \item 标注格式转换：将BDD100K原始的JSON格式标注转换为YOLO模型所需的标准格式。
     \item 类别映射：将原始数据集中的多类别目标映射为两大类——活动障碍物（包括行人、骑车人、汽车等）和交通信号（包括交通灯和交通标志）。
     \item 坐标归一化：将目标边界框的坐标从像素值转换为归一化的相对值。
-\end{enumerate}
+\end{circledlist}
 
 通过上述预处理，将BDD100K数据集转换为适合YOLOv5模型训练的格式，并创建了相应的配置文件。数据集中的目标被划分为两类：活动障碍物（类别0）和交通信号（类别1），这种分类方式有助于模型更好地理解和区分道路场景中不同类型的障碍物。
 
@@ -890,7 +1139,7 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 
 在经过充分训练后，将训练好的模型应用于实际道路场景的障碍物检测任务。图\ref{fig:detection}展示了该模型在不同场景下的检测效果。
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.45\textwidth]{figures/chapter4/a.jpg}
     \includegraphics[width=0.45\textwidth]{figures/chapter4/b.jpg}
@@ -906,16 +1155,16 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 \subsubsection{模型训练与评估}
 在模型训练中，采用了Ultralytics提供的YOLOv5框架对模型进行训练。训练过程中，采用了以下策略：
 
-\begin{enumerate}
-    \item \textbf{数据增强}：应用随机裁剪、旋转、缩放、亮度调整等增强技术，提高模型对不同场景的适应能力。
-    \item \textbf{学习率调度}：采用余弦退火策略动态调整学习率，以实现更好的收敛效果。
-    \item \textbf{批量归一化}：在网络各层之间应用批量归一化，加速训练过程并提高模型稳定性。
-    \item \textbf{早停机制}：监控验证集上的性能，防止过拟合。
-\end{enumerate}
+\begin{halfparlist}
+    \item 数据增强：应用随机裁剪、旋转、缩放、亮度调整等增强技术，提高模型对不同场景的适应能力。
+    \item 学习率调度：采用余弦退火策略动态调整学习率，以实现更好的收敛效果。
+    \item 批量归一化：在网络各层之间应用批量归一化，加速训练过程并提高模型稳定性。
+    \item 早停机制：监控验证集上的性能，防止过拟合。
+\end{halfparlist}
 
 图\ref{fig:training_validation_curves}展示了模型在训练过程中的各项性能指标变化趋势。
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/chapter4/val.png}
     \caption{模型训练验证性能曲线}
@@ -926,61 +1175,145 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 
 为全面评估目标检测模型性能，采用了以下几个关键指标：
 
-\begin{enumerate}
-    \item \textbf{精确率(Precision)}：表示在所有被预测为正类的样本中，真正为正类的比例。
+\begin{parlist}
+    \item 精确率(Precision)：表示在所有被预测为正类的样本中，真正为正类的比例。
     \begin{equation}
         \text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}
     \end{equation}
 
-    \item \textbf{召回率(Recall)}：表示在所有真实为正类的样本中，被正确预测的比例。
+    \item 召回率(Recall)：表示在所有真实为正类的样本中，被正确预测的比例。
     \begin{equation}
         \text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}
     \end{equation}
 
-    \item \textbf{F1分数}：精确率和召回率的调和平均值，提供了一个平衡的性能度量。
+    \item F1分数：精确率和召回率的调和平均值，提供了一个平衡的性能度量。
     \begin{equation}
         \text{F1} = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
     \end{equation}
 
-    \item \textbf{平均精度(AP)}：在不同召回率水平下精确率的平均值，对每个类别单独计算。
+    \item 平均精度(AP)：在不同召回率水平下精确率的平均值，对每个类别单独计算。
 
-    \item \textbf{平均精度均值(mAP)}：所有类别AP的平均值，通常使用特定的IoU(交并比)阈值，如mAP@0.5或mAP@0.5:0.95。
-\end{enumerate}
+    \item 平均精度均值(mAP)：所有类别AP的平均值，通常使用特定的IoU(交并比)阈值，如mAP@0.5或mAP@0.5:0.95。
 
-IoU(交并比)是评估预测边界框与真实边界框重叠程度的关键指标：
+    \item IoU(交并比)：是评估预测边界框与真实边界框重叠程度的关键指标：
+\end{parlist}
+
 \begin{equation}
 IoU(A, B) = \frac{A \cap B}{A \cup B}
 \end{equation}
 
-\subsubsection{模型蒸馏}
+\subsubsection{模型蒸馏及量化}
 
-为了满足自动驾驶系统对实时性和资源效率的高要求，采用了知识蒸馏技术进一步优化模型。知识蒸馏通过将大型"教师"模型的知识转移到小型"学生"模型中，实现在保持较高精度的同时大幅降低模型复杂度和推理时间。
+\begin{parlist}
 
-在本研究中，使用YOLOv5s-ultralytics(YOLOv5su)作为教师模型，YOLOv5n-ultralytics(YOLOv5nu)作为学生模型。通过蒸馏过程，YOLOv5nu模型的参数量仅为YOLOv5su的1/3，但经过约100轮的蒸馏训练后，能够达到教师模型95\%的检测精度，实现了显著的模型压缩。
 
-对教师模型(YOLOv5su)、蒸馏后的学生模型(YOLOv5nu-蒸馏)和未经蒸馏训练的学生模型(YOLOv5nu-原始)进行了全面的性能比较。
+\item 模型蒸馏（Model Distillation）
 
-从图\ref{fig:processing_time}可以明显观察到，蒸馏后的YOLOv5nu模型相较于原始教师模型YOLOv5su，推理速度提高至其171\%（使用Kaggle 单GPU T4 15G进行速度测试）。这一速度提升对于自动驾驶系统的实时决策至关重要，使系统能够更快地响应环境变化。
+模型蒸馏是一种知识压缩技术。它通过将大型且性能优越的教师模型中的知识迁移到结构更为精简的学生模型，实现模型的轻量化与高效推理。在蒸馏过程中，学生模型不仅学习传统的硬标签（ground-truth label），还通过最小化与教师模型输出的软标签（soft label，通常为softmax概率分布）之间的差异，获得更多关于类别间关系的信息。常用的损失函数包括交叉熵损失和Kullback-Leibler散度。
 
-\begin{figure}[htbp]
+\item 模型量化（Model Quantization）
+
+模型蒸馏是一种常用的模型压缩与加速技术。它通过将模型参数和计算从高精度（如32位浮点数）转换为低精度（如8位整数），有效减少模型存储空间和推理时的计算资源消耗。量化不仅显著降低了模型的存储和带宽需求，还提升了模型在边缘设备上的推理速度。常见的量化方法包括静态量化（Post-Training Static Quantization）和动态量化（Dynamic Quantization）：
+
+\begin{halfparlist}
+    \item 静态量化
+
+    在模型推理前，利用一部分校准数据对模型的权重和激活进行量化参数的统计和校准，将其统一映射为低精度格式。该方法适用于YOLOv5等目标检测模型，能够在保证精度的前提下大幅提升推理效率。
+
+    \item 动态量化
+
+    在推理过程中，动态地将部分权重或激活从高精度转换为低精度。该方法适用于对延迟和存储要求较高、但对精度损失容忍度较高的场景。动态量化通常对模型权重进行量化，而激活则在推理时动态处理。
+
+    \end{halfparlist}
+
+\end{parlist}
+
+在YOLOv5模型中，量化通常结合PyTorch等深度学习框架实现，支持对卷积层、全连接层等关键算子的量化。通过量化，YOLOv5模型能够在移动端、嵌入式等资源受限设备上实现高效部署，同时保持较好的检测性能。
+
+本文采用基于YOLO的知识蒸馏（Knowledge Distillation, KD）方法，以提升轻量级检测模型的性能。首先，训练一个结构复杂、性能优越的教师模型（YOLOv5s-ultralytics，YOLOv5su），随后利用其输出指导学生模型（YOLOv5n-ultralytics，YOLOv5nu）的训练。
+训练过程中，学生模型不仅最小化与真实标签的常规检测损失，还通过最小化与教师模型输出之间的蒸馏损失，实现知识迁移。
+蒸馏损失包括边界框、置信度和分类输出的差异，采用均方误差（MSE）和Kullback-Leibler散度（KL）进行度量。为平衡检测损失与蒸馏损失的贡献，引入余弦退火策略动态调整蒸馏损失权重。
+最后，通过对学生模型的静态量化，保证模型精度的同时，提升推理效率，结合tensorflow lite micro（tflite-micro）库，可对模型进行边缘部署。
+
+损失函数定义如下：
+\begin{equation}
+L = L_{\text{det}} + \lambda_{\text{KD}} \cdot L_{\text{KD}}
+\end{equation}
+
+其中，$L_{\text{det}}$为学生模型的常规检测损失，$L_{\text{KD}}$为蒸馏损失，$\lambda_{\text{KD}}$为蒸馏损失权重，采用余弦退火策略动态调整：
+
+\begin{equation}
+\lambda_{\text{KD}}(e) = \lambda_{\text{final}} + 0.5 \cdot (\lambda_{\text{init}} - \lambda_{\text{final}}) \cdot \left[1 + \cos\left(\frac{\pi \cdot e}{E}\right)\right]
+\end{equation}
+
+其中，$e$为当前epoch，$E$为总epoch数，$\lambda_{\text{init}}$和$\lambda_{\text{final}}$分别为初始和最终蒸馏权重。
+
+\begin{align}
+L_{\text{box}} &= \text{MSE}(S_{\text{box}}, T_{\text{box}}) \\
+L_{\text{conf}} &= \text{KL}\left(\text{Softmax}\left(\frac{T_{\text{conf}}}{T}\right) \Big\| \text{Softmax}\left(\frac{S_{\text{conf}}}{T}\right)\right) \cdot T^2 \\
+L_{\text{cls}} &= \text{KL}\left(\text{Softmax}\left(\frac{T_{\text{cls}}}{T}\right) \Big\| \text{Softmax}\left(\frac{S_{\text{cls}}}{T}\right)\right) \cdot T^2
+\end{align}
+
+最终蒸馏损失为：
+\begin{equation}
+L_{\text{KD}} = L_{\text{box}} + L_{\text{conf}} + L_{\text{cls}}
+\end{equation}
+
+整体流程如图\ref{fig:distill-flow}所示
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.2cm and 1.8cm,
+        every node/.style={rounded corners, draw, align=center, minimum width=1.8cm, minimum height=0.7cm, font=\small},
+        >=latex'
+    ]
+        % Nodes
+        \node (input) {输入图像 $x$};
+        \node (teacher) [above right=of input] {教师模型 $T$};
+        \node (student) [below right=of input] {学生模型 $S$};
+        \node (t_out) [right=of teacher] {教师输出 $T(x)$};
+        \node (s_out) [right=of student] {学生输出 $S(x)$};
+        \node (loss) [right=1cm of $(t_out)!0.5!(s_out)$, minimum width=2.8cm] {损失计算\\$L = L_{\text{det}} + \lambda_{\text{KD}} L_{\text{KD}}$};
+        \node (opt) [below=2cm of loss] {反向传播优化};
+
+        % Arrows
+        \draw[->] (input) -- (teacher);
+        \draw[->] (input) -- (student);
+        \draw[->] (teacher) -- (t_out);
+        \draw[->] (student) -- (s_out);
+        \draw[->] (t_out) -- (loss);
+        \draw[->] (s_out) -- (loss);
+        \draw[->] (loss) -- (opt);
+    \end{tikzpicture}
+    \caption{知识蒸馏训练流程}
+    \label{fig:distill-flow}
+\end{figure}
+
+
+虽然YOLOv5nu模型的参数量仅为YOLOv5su的三分之一，但通过蒸馏，仅需约100轮训练，即可快速收敛至教师模型95\%的检测精度，实现了显著的模型压缩。
+
+下文对教师模型（YOLOv5su）、蒸馏后的学生模型（YOLOv5nu-蒸馏）和未经蒸馏训练的学生模型（YOLOv5nu-原始）进行了全面性能比较。
+
+从图\ref{fig:processing_time}可以看出，蒸馏后的YOLOv5nu模型相较于原始教师模型YOLOv5su，推理速度提升至其171\%（在Kaggle单GPU T4 15G环境下测试）。这一速度提升对于自动驾驶系统的实时决策至关重要，使系统能够更快响应环境变化。
+
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figures/chapter4/ptc.png}
-    \caption{Detailed comparison of processing time across different stages for each model.}
+    \caption{处理速度对比图}
     \label{fig:processing_time}
 \end{figure}
 
-同时，在对处理要求较严格的智能驾驶方向，FPS十分重要，如图\ref{fig:fps_comparison}，在保留了YOLOv5nu的处理速度的同时，较好地保留了YOLOv5su的精度。
+在智能驾驶等对处理速度要求严格的场景，FPS尤为重要。如图\ref{fig:fps_comparison}所示，蒸馏后的YOLOv5nu模型在保留高处理速度的同时，也较好地保持了YOLOv5su的检测精度。
 
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/chapter4/fps.png}
-    \caption{Frame rate (FPS) comparison between different models.}
+    \caption{帧率对比图}
     \label{fig:fps_comparison}
 \end{figure}
 
-
-图\ref{fig:accuracy_loss_comparison}展示了三个模型在精度和损失函数方面的比较。
+图\ref{fig:accuracy_loss_comparison}展示了三种模型在精度和损失函数方面的对比。
 
 \begin{figure}[H]
     \centering
@@ -989,9 +1322,9 @@ IoU(A, B) = \frac{A \cap B}{A \cup B}
     \label{fig:accuracy_loss_comparison}
 \end{figure}
 
-从精度对比可以看出，虽然蒸馏后的YOLOv5nu模型参数量大幅减少，但其检测精度仅略低于教师模型YOLOv5su，且明显优于未经蒸馏的YOLOv5nu-原始模型。这表明知识蒸馏有效地将教师模型的表示能力转移到了更小的学生模型中。
+可以看出，虽然蒸馏后的YOLOv5nu模型参数量大幅减少，但其检测精度仅略低于教师模型YOLOv5su，且明显优于未经蒸馏的YOLOv5nu-原始模型。这表明知识蒸馏有效地将教师模型的表示能力转移到了更小的学生模型中。
 
-图\ref{fig:comprehensive_performance}进一步展示了三个模型在各项关键性能指标上的最终表现。
+图\ref{fig:comprehensive_performance}进一步展示了三种模型在各项关键性能指标上的最终表现。
 
 \begin{figure}[H]
     \centering
@@ -1000,21 +1333,28 @@ IoU(A, B) = \frac{A \cap B}{A \cup B}
     \label{fig:comprehensive_performance}
 \end{figure}
 
-如图\ref{fig:comprehensive_performance}所示，在mAP、精确率、召回率和F1分数等关键指标上，蒸馏后的YOLOv5nu模型都达到了接近教师模型的水平，同时在模型大小和推理速度方面具有显著优势。
+如图\ref{fig:comprehensive_performance}所示，在mAP、精确率、召回率和F1分数等关键指标上，蒸馏后的YOLOv5nu模型均达到了接近教师模型的水平，同时在模型大小和推理速度方面具有显著优势。
 
-特别是在自动驾驶场景下最为关注的mAP@0.5指标，蒸馏后模型达到了教师模型97.6\%以上的性能，而直接使用yolov5nu训练的模型则仅达到教师模型的76.1\%，提升了21.5\%，充分满足实际应用需求。
 
-综上所述，通过知识蒸馏技术，成功实现了模型的轻量化，在保持较高检测精度的同时显著提升了推理速度，为自动驾驶系统中的障碍物检测任务提供了一个高效、实用的解决方案。这种优化后的模型更适合部署在计算资源有限的车载环境中，能够支持系统进行实时、准确的障碍物检测和避障决策。
+尤其是在自动驾驶场景下最为关注的mAP@0.5指标，蒸馏后模型达到了教师模型97.6\%以上的性能，而直接训练的YOLOv5nu模型仅为教师模型的76.1\%，提升了21.5\%。这充分说明，知识蒸馏能够在保持较高精度的同时，大幅降低模型复杂度和推理时间，满足自动驾驶系统对实时性和资源效率的高要求。
+
+
+综上所述，通过知识蒸馏、量化技术，成功实现了模型的轻量化，为自动驾驶系统中的障碍物检测任务提供了一个高效、实用的解决方案。这种优化后的模型更适合部署在计算资源有限的车载环境中，能够支持系统进行实时、准确的障碍物检测和避障决策。
 
 
 % 000
 \subsection{障碍跟踪}
 \subsubsection{改进的DeepSORT框架}
-\paragraph{检测关联机制}
+
+\begin{parlist}
+
+
+\item 检测关联机制
+
 
 DeepSORT的核心创新在于其级联关联策略，该策略将目标的外观特征与运动状态信息融合，构建多元相似度度量机制。此方法在计算关联代价时，同时考虑外观相似性（通过深度特征提取）和运动连续性（通过卡尔曼滤波预测）。
 DeepSORT的系统架构如图\ref{fig:deepsort}所示，该架构包括了特征提取模块、卡尔曼滤波模块和关联模块。特征提取模块用于提取目标的深度特征，卡尔曼滤波模块用于预测目标的运动状态，关联模块用于计算目标的关联代价并进行关联决策。
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
 node distance=4mm,
@@ -1066,22 +1406,22 @@ arrow/.style={->, >=stealth, thick}
 
 具体而言，算法通过加权组合马氏距离（衡量运动状态差异）和余弦距离（衡量外观特征差异）来评估检测框与已有轨迹的匹配程度。在车载场景中，运动信息权重通常设为0.7，外观特征权重设为0.3，这种配置表现最佳。
 
-\paragraph{卡尔曼滤波预测}
+\item 卡尔曼滤波预测
 
 DeepSORT使用线性卡尔曼滤波器对目标运动状态进行建模和预测，这是保障算法稳定性的关键。卡尔曼滤波包含两个主要阶段：
 
-\begin{itemize}
+\begin{circledlist}
     \item 预测阶段：根据上一时刻的状态估计当前时刻状态
     \item 更新阶段：结合实际观测数据对预测状态进行修正
-\end{itemize}
+\end{circledlist}
 
 在车辆跟踪应用中，状态向量包含边界框中心坐标、宽高比、高度及其对应的速度分量。这种设计使系统能够在检测暂时丢失的情况下，仍然维持对目标位置的合理估计，有效应对短时遮挡场景。
 
-\paragraph{轨迹管理策略}
+\item 轨迹管理策略
 
 DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecycle}所示，包括暂存(Tentative)、确认(Confirmed)和删除(Deleted)三种状态：
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     node distance=4cm,
@@ -1110,34 +1450,40 @@ DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecy
 
 此机制有效过滤短期误检，同时保持对长期稳定目标的连续跟踪：
 
-\begin{itemize}
+\begin{circledlist}
     \item 新检测首先被标记为"暂存"状态
     \item 连续匹配3次后升级为"确认"状态
     \item 长时间未匹配（通常为30/fps帧）的轨迹被标记为"删除"状态
-\end{itemize}
+\end{circledlist}
 
 通过这种状态管理机制，DeepSORT能够维持稳定的跟踪ID，减少ID切换频率，提高跟踪连续性。
 
-\paragraph{匹配算法优化}
+\item 匹配算法优化
 
 为解决检测框与轨迹的最优匹配问题，DeepSORT采用匈牙利算法(Hungarian Algorithm)求解全局最优分配方案。匹配过程分两阶段执行：
 
-\begin{itemize}
-    \item 第一阶段：基于外观特征和运动状态匹配确认轨迹
-    \item 第二阶段：仅基于IoU匹配剩余的检测框和短期轨迹
-\end{itemize}
+\begin{circledlist}
+    \item 基于外观特征和运动状态匹配确认轨迹
+    \item 仅基于IoU匹配剩余的检测框和短期轨迹
+\end{circledlist}
 
 这种级联匹配策略优先处理高质量轨迹，有效提高了密集场景下的匹配精度，特别是对于部分遮挡的车辆。
 
 尽管原始DeepSORT在行人跟踪领域表现优异，但直接应用于车载场景时存在三个主要问题：特征提取模型不匹配、运动模型过于简化以及ID切换频繁。
 
+\end{parlist}
+
+
 \subsubsection{卡尔曼滤波器}
 
 卡尔曼滤波器在车载障碍物跟踪中扮演着关键角色，通过结合运动模型和观测数据，为目标位置提供最优估计。本研究实现了针对车载环境优化的线性卡尔曼滤波器。
 
-\paragraph{状态表示与运动模型}
+\begin{parlist}
 
-的卡尔曼滤波实现采用8维状态向量：
+
+\item 状态表示与运动模型
+
+卡尔曼滤波的实现采用8维状态向量：
 
 \begin{equation}
 \mathbf{x} = [x, y, w, h, v_x, v_y, v_w, v_h]^T
@@ -1158,7 +1504,7 @@ DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecy
 
 其中$\mathbf{I}_4$为$4 \times 4$单位矩阵，$\Delta t$为帧间时间间隔。
 
-\paragraph{噪声调整与车速自适应}
+\item 噪声调整与车速自适应
 
 标准卡尔曼滤波器在应对车辆速度变化时面临挑战，因此引入了基于车速的过程噪声自适应机制：
 
@@ -1168,7 +1514,7 @@ DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecy
 
 其中$\mathbf{Q}_0$为基础噪声协方差，$v$为估计速度向量，$\alpha$为调整系数。通过这种方式，系统对高速移动物体采用更大的过程噪声，提高跟踪鲁棒性。
 
-\paragraph{更新机制与平滑处理}
+\item 更新机制与平滑处理
 
 为平滑跟踪结果，在测量更新阶段采用指数移动平均(EMA)滤波器：
 
@@ -1180,11 +1526,15 @@ DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecy
 
 特定优化后的卡尔曼滤波器，能够在资源受限的平台，保持较为理想的精度和效率，同时保持较低的计算开销。
 
+\end{parlist}
+
+
 \subsubsection{匈牙利算法级联匹配}
 
 在目标跟踪过程中，将新检测框与现有轨迹进行关联是关键挑战。采用匈牙利算法进行全局最优匹配，并引入级联匹配策略以提高复杂场景下的关联精确度。
 
-\paragraph{代价矩阵构建}
+\begin{parlist}
+\item 代价矩阵构建
 
 匹配过程首先构建代价矩阵$\mathbf{C}$，其中元素$c_{ij}$表示第$i$个轨迹与第$j$个检测之间的关联代价：
 
@@ -1194,23 +1544,23 @@ c_{ij} = \lambda \cdot d_{motion}(i,j) + (1-\lambda) \cdot d_{appearance}(i,j)
 
 其中$d_{motion}$为运动距离（基于IoU计算），$d_{appearance}$为表观距离，$\lambda$为权重系数（在的实现中设为1.0，仅使用IoU距离）。
 
-\paragraph{贪婪匹配算法实现}
+\item 贪心匹配算法实现
 
 为适应资源受限嵌入式平台，采用贪心匹配策略替代标准匈牙利算法，在保证性能的同时显著降低计算复杂度。
 
-\paragraph{级联匹配策略}
+\item 级联匹配策略
 
 为处理车载场景中常见的遮挡和密集目标，实现了基于轨迹质量的级联匹配策略：
 
-\begin{enumerate}
+\begin{circledlist}
     \item 首先匹配高质量轨迹（连续跟踪帧数多的）
     \item 再匹配中等质量轨迹
     \item 最后处理低质量轨迹和新初始化轨迹
-\end{enumerate}
+\end{circledlist}
 
 这种策略确保稳定轨迹获得优先匹配权，从而提高系统在复杂场景的鲁棒性。
 
-\paragraph{阈值动态调整}
+\item 阈值动态调整
 
 引入IoU阈值的动态调整机制，根据目标大小、速度和跟踪历史进行自适应设置：
 
@@ -1220,23 +1570,27 @@ c_{ij} = \lambda \cdot d_{motion}(i,j) + (1-\lambda) \cdot d_{appearance}(i,j)
 
 其中$\tau_0$为基础阈值（0.7），$v$为估计速度，$a$为目标面积，$\beta$为调整系数。这使系统能够为快速移动的小目标使用更宽松的匹配标准。
 
+\end{parlist}
+
 \subsubsection{特征度量}
 
 在资源受限的嵌入式平台上实现高效的特征表示和度量是一个显著挑战。开发了一套轻量级特征度量方法，适合嵌入式低功耗设备。
+\begin{parlist}
 
-\paragraph{外观特征简化}
+
+\item 外观特征简化
 
 考虑到在嵌入式设备运行的资源局限，及在道路使用上的时空连贯性，本文简化了传统DeepSORT中基于深度学习的特征提取过程，改用更高效的几何和运动特征：
 
-\begin{itemize}
+\begin{halfparlist}
     \item 边界框宽高比：$r = w/h$
     \item 尺寸一致性：$s_{cons} = \min(w_1/w_2, w_2/w_1) \cdot \min(h_1/h_2, h_2/h_1)$
     \item 运动一致性：通过速度向量余弦相似度计算
-\end{itemize}
+\end{halfparlist}
 
 这些特征组合形成了的轻量级表观描述符。
 
-\paragraph{IoU作为主要相似度度量}
+\item IoU作为主要相似度度量
 
 本文主要依赖IoU（交并比，Intersection over Union）作为关联度量，这是因为IoU能够有效地表达两个边界框之间的空间重叠关系，为目标跟踪提供稳定可靠的度量标准。IoU的计算方式如下：
 
@@ -1248,12 +1602,12 @@ IoU(A, B) = \frac{\text{Area}(A \cap B)}{\text{Area}(A \cup B)}
 
 与传统的马氏距离等纯距离度量相比，IoU具有以下优势：
 
-\begin{itemize}
-\item \textbf{几何解释明确}：直观地表达了两个边界框的重叠程度，便于理解和调整
-\item \textbf{尺度不变性}：不受目标大小变化的影响，对近处大目标和远处小目标都能公平对待
-\item \textbf{形状敏感}：考虑了边界框的形状和方向，而非仅仅关注中心点距离
-\item \textbf{计算效率高}：实现简单，计算开销较小
-\end{itemize}
+\begin{halfparlist}
+\item 几何解释明确：直观地表达了两个边界框的重叠程度，便于理解和调整
+\item 尺度不变性：不受目标大小变化的影响，对近处大目标和远处小目标都能公平对待
+\item 形状敏感：考虑了边界框的形状和方向，而非仅仅关注中心点距离
+\item 计算效率高：实现简单，计算开销较小
+\end{halfparlist}
 
 在本文的跟踪关联阶段，基于IoU构建了关联度量函数：
 
@@ -1265,7 +1619,7 @@ d_{IoU}(i,j) = 1 - IoU(i,j)
 
 此外，在处理复杂场景时，对基本IoU度量进行了改进，综合考虑了目标的运动一致性和外观特征相似度，从而进一步提高了跟踪的鲁棒性。
 
-\paragraph{类别感知匹配}
+\item 类别感知匹配
 
 在关联阶段引入目标类别信息，仅允许同类目标之间的匹配（如汽车与汽车、行人与行人匹配），这显著提升了多类别目标跟踪的准确性。
 
@@ -1291,9 +1645,7 @@ d_{IoU}(i,j) = 1 - IoU(i,j)
     \label{fig:track_result}
 \end{figure}
 通过以上优化，障碍物跟踪能够在资源受限嵌入式设备上高效运行，同时保持车载场景所需的跟踪精度和稳定性。系统在模拟环境和真实道路测试中均展现出稳定的跟踪能力，为后续的碰撞风险评估提供可靠基础。
-
-
-
+\end{parlist}
 
 
 
@@ -1343,8 +1695,10 @@ TTC_{region} = \min_{t>0} \{t | Region_A(t) \cap Region_B(t) \neq \emptyset \}
 
 碰撞风险评估不仅需要考虑时间距离，还需综合分析多种因素，包括空间关系、相对运动状态和环境条件等。典型的风险评估模型包括以下几个关键因素：
 
-\begin{enumerate}
-    \item \textbf{时空风险因子}：基于TTC值划分风险等级，通常采用分段函数形式：
+\begin{parlist}
+    \item 时空风险因子
+
+    基于TTC值划分风险等级，通常采用分段函数形式：
 
     \begin{equation}
     Risk_1 = \begin{cases}
@@ -1356,10 +1710,14 @@ TTC_{region} = \min_{t>0} \{t | Region_A(t) \cap Region_B(t) \neq \emptyset \}
 
     其中$T_{critical}$为紧急阈值（通常为1.5秒），$T_{warning}$为预警阈值（通常为5.0秒），$\lambda$为衰减系数，控制风险随TTC增加而降低的速率。
 
-    \item \textbf{道路边界风险}：评估物体是否可能偏离道路。当预测轨迹与道路边界或不可行驶区域相交时，系统应增加风险评分。这对于预测行人、自行车等非机动车辆的异常行为特别重要。
+    \item 道路边界风险
 
-    \item \textbf{相对运动状态风险}：考虑物体间的相对速度、加速度和接近角度。例如，高速正面接近的风险显著高于低速同向运动的情况。
-\end{enumerate}
+    评估物体是否可能偏离道路。当预测轨迹与道路边界或不可行驶区域相交时，系统应增加风险评分。这对于预测行人、自行车等非机动车辆的异常行为特别重要。
+
+    \item 相对运动状态风险
+
+    考虑物体间的相对速度、加速度和接近角度。例如，高速正面接近的风险显著高于低速同向运动的情况。
+\end{parlist}
 
 最终风险评分通过加权融合各个风险因子得出：
 
@@ -1380,7 +1738,7 @@ Alert = \begin{cases}
 \end{equation}
 
 这种分级预警策略能够根据风险程度提供相应级别的响应，如图\ref{fig:ttc_result}所示，分级机制有效平衡了系统的敏感性和特异性，避免因过度报警导致驾驶员对预警信号的忽视。
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \begin{minipage}[t]{0.48\linewidth}
         \centering
@@ -1416,49 +1774,49 @@ Alert = \begin{cases}
 
 本研究围绕车道障碍检测与碰撞预测方法展开，构建了一套完整的辅助驾驶感知与预警系统。通过融合传统图像处理技术与深度学习方法，成功解决了复杂交通场景下的环境感知挑战，实现了从路面分析到碰撞风险评估的全流程智能感知。主要研究成果可总结如下：
 
-\begin{enumerate}
-    \item \textbf{车道线检测与道路分割}：提出了传统图像处理与深度学习相结合的混合式车道识别框架。通过多尺度DoG边缘检测和形态学处理提取车道线几何特征，同时利用FastSCNN网络实现像素级道路语义分割，两种方法互为补充，显著增强了系统在各种复杂环境下的鲁棒性。
+\begin{parlist}
+    \item 车道线检测与道路分割：提出了传统图像处理与深度学习相结合的混合式车道识别框架。通过多尺度DoG边缘检测和形态学处理提取车道线几何特征，同时利用FastSCNN网络实现像素级道路语义分割，两种方法互为补充，显著增强了系统在各种复杂环境下的鲁棒性。
 
-    \item \textbf{轻量级障碍物检测}：基于YOLOv5系列开发了适用于嵌入式设备的障碍物检测模型。采用知识蒸馏技术，以YOLOv5s为教师模型训练YOLOv5n学生模型，在参数量减少70\%的前提下，保持了97.6\%的检测性能。针对交通场景特点，设计了障碍物类别优先级策略，合理平衡了不同类型目标的检测敏感度。
+    \item 轻量级障碍物检测：基于YOLOv5系列开发了适用于嵌入式设备的障碍物检测模型。采用知识蒸馏技术，以YOLOv5s为教师模型训练YOLOv5n学生模型，在参数量减少70\%的前提下，保持了97.6\%的检测性能。针对交通场景特点，设计了障碍物类别优先级策略，合理平衡了不同类型目标的检测敏感度。
 
-    \item \textbf{高效多目标跟踪}：改进DeepSORT算法框架，设计了适合车载环境的目标跟踪方案。通过优化卡尔曼滤波器参数和基于IoU的关联度量，在保持高精度跟踪的同时，将计算复杂度降低了50\%以上，使系统能够在树莓派等资源受限平台上稳定运行。
+    \item 高效多目标跟踪：改进DeepSORT算法框架，设计了适合车载环境的目标跟踪方案。通过优化卡尔曼滤波器参数和基于IoU的关联度量，在保持高精度跟踪的同时，将计算复杂度降低了50\%以上，使系统能够在树莓派等资源受限平台上稳定运行。
 
-    \item \textbf{碰撞风险评估模型}：构建了多层次碰撞预测框架，融合目标相对运动状态、道路空间约束和时间距离因素，提出基于TTC和路径规划的综合风险评估模型。通过分级预警机制，系统能够在0.2秒内完成从感知到预警的全流程处理，为驾驶员提供及时、可靠的安全辅助信息。
-\end{enumerate}
+    \item 碰撞风险评估模型：构建了多层次碰撞预测框架，融合目标相对运动状态、道路空间约束和时间距离因素，提出基于TTC和路径规划的综合风险评估模型。通过分级预警机制，系统能够在0.2秒内完成从感知到预警的全流程处理，为驾驶员提供及时、可靠的安全辅助信息。
+\end{parlist}
 
 \subsection{研究不足}
 
 尽管本研究在车道障碍检测与碰撞预测方面取得了一定成果，但仍存在以下不足：
 
-\begin{enumerate}
-    \item \textbf{极端场景适应性}：当前系统在极端天气条件（如大雪、浓雾）和低光照环境下表现仍有待提高。特别是在雨雪导致的路面反光和模糊视野情况下，车道线检测准确率明显下降，影响系统整体可靠性。
+\begin{parlist}
+    \item 极端场景适应性：当前系统在极端天气条件（如大雪、浓雾）和低光照环境下表现仍有待提高。特别是在雨雪导致的路面反光和模糊视野情况下，车道线检测准确率明显下降，影响系统整体可靠性。
 
-    \item \textbf{目标遮挡处理}：虽然改进了跟踪算法，但在严重遮挡场景下，目标轨迹预测仍存在不稳定性。尤其是在车流密集的城市道路环境中，部分遮挡导致的ID切换问题影响了碰撞风险评估的连续性。
+    \item 目标遮挡处理：虽然改进了跟踪算法，但在严重遮挡场景下，目标轨迹预测仍存在不稳定性。尤其是在车流密集的城市道路环境中，部分遮挡导致的ID切换问题影响了碰撞风险评估的连续性。
 
-    \item \textbf{计算资源平衡}：为适应嵌入式平台，模型参数进行了大幅精简，牺牲了部分检测精度。这种权衡使系统在某些复杂场景下可能漏检小尺寸或远距离目标，特别是在高速行驶环境中。
+    \item 计算资源平衡：为适应嵌入式平台，模型参数进行了大幅精简，牺牲了部分检测精度。这种权衡使系统在某些复杂场景下可能漏检小尺寸或远距离目标，特别是在高速行驶环境中。
 
-    \item \textbf{多传感器融合不足}：当前系统主要依赖单一摄像头数据，缺乏与雷达、激光雷达等传感器的信息融合能力，限制了系统的感知深度和全天候工作能力。
+    \item 多传感器融合不足：当前系统主要依赖单一摄像头数据，缺乏与雷达、激光雷达等传感器的信息融合能力，限制了系统的感知深度和全天候工作能力。
 
-    \item \textbf{动态场景建模局限}：采用的线性运动模型难以准确预测复杂交通参与者的突变行为，对于急转弯、突然减速等非线性运动模式的预测精度有限。
-\end{enumerate}
+    \item 动态场景建模局限：采用的线性运动模型难以准确预测复杂交通参与者的突变行为，对于急转弯、突然减速等非线性运动模式的预测精度有限。
+\end{parlist}
 
 \subsection{未来研究展望}
 
 基于本研究的成果和局限性，未来研究可在以下方向进一步拓展：
 
-\begin{enumerate}
-    \item \textbf{多模态感知融合}：整合摄像头、毫米波雷达和超声波传感器的互补优势，构建多模态感知系统，提高全天候和全场景感知能力。特别是在视觉受限条件下，雷达数据可提供可靠的距离和速度信息，增强系统的环境适应性。
+\begin{parlist}
+    \item 多模态感知融合：整合摄像头、毫米波雷达和超声波传感器的互补优势，构建多模态感知系统，提高全天候和全场景感知能力。特别是在视觉受限条件下，雷达数据可提供可靠的距离和速度信息，增强系统的环境适应性。
 
-    \item \textbf{动态场景理解增强}：引入基于注意力机制的时空序列模型，如Transformer架构，提升系统对交通参与者意图和行为的预测能力。这将使预警系统从单纯的碰撞预测向行为理解与风险推理方向发展。
+    \item 动态场景理解增强：引入基于注意力机制的时空序列模型，如Transformer架构，提升系统对交通参与者意图和行为的预测能力。这将使预警系统从单纯的碰撞预测向行为理解与风险推理方向发展。
 
-    \item \textbf{边缘-云协同架构}：设计边缘计算和云服务协同的分层系统架构，在保证核心安全功能本地实时响应的同时，利用云端资源进行模型更新、场景分析和历史数据挖掘，提高系统智能化水平。
+    \item 边缘-云协同架构：设计边缘计算和云服务协同的分层系统架构，在保证核心安全功能本地实时响应的同时，利用云端资源进行模型更新、场景分析和历史数据挖掘，提高系统智能化水平。
 
-    \item \textbf{自适应学习能力}：探索在线学习和增量更新机制，使系统能够从实际驾驶数据中持续优化，自动适应不同驾驶习惯和道路环境，形成个性化的安全辅助策略。
+    \item 自适应学习能力：探索在线学习和增量更新机制，使系统能够从实际驾驶数据中持续优化，自动适应不同驾驶习惯和道路环境，形成个性化的安全辅助策略。
 
-    \item \textbf{车路协同感知}：研究基于5G/V2X通信的车路协同感知技术，利用路侧基础设施提供的环境信息扩展单车感知边界，形成网络化的协同感知与风险预警系统，特别是对于视线受限的交叉路口等高风险区域。
+    \item 车路协同感知：研究基于5G/V2X通信的车路协同感知技术，利用路侧基础设施提供的环境信息扩展单车感知边界，形成网络化的协同感知与风险预警系统，特别是对于视线受限的交叉路口等高风险区域。
 
-    \item \textbf{人机交互优化}：深入研究驾驶员认知模式和注意力分配特性，优化预警信息的呈现方式和触发时机，提高驾驶员对系统预警的接受度和反应效率，减少误报和漏报导致的用户体验问题。
-\end{enumerate}
+    \item 人机交互优化：深入研究驾驶员认知模式和注意力分配特性，优化预警信息的呈现方式和触发时机，提高驾驶员对系统预警的接受度和反应效率，减少误报和漏报导致的用户体验问题。
+\end{parlist}
 
 本研究为基于深度学习的车道障碍检测与碰撞预测方法提供了一种实用性解决方案，为提升道路交通安全贡献了新的技术手段。随着计算硬件性能的提升、深度学习算法的进步以及多传感器融合技术的发展，未来的辅助驾驶感知系统将更加智能、可靠，为实现"零事故"的交通愿景提供坚实技术支撑。
 
