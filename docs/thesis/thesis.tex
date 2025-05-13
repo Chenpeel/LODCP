@@ -658,8 +658,21 @@ E_{final} = \alpha \cdot E_{traditional} + (1-\alpha) \cdot E_{deep}
 \end{parlist}
 
 
+\subsubsection{拟合车道线}
+\begin{parlist}
+\item 霍夫变换
+
+霍夫变换（Hough Transform）是用于检测参数化几何形状（如直线、圆、椭圆等）的经典特征提取技术，其核心是将笛卡尔坐标系中的点映射到参数空间，通过累加统计找出最可能的几何形状。
+
+在直线检测中，霍夫变换利用直线的参数表示法。通常，一条直线可以用极坐标形式表示，而笛卡尔空间中位于同一直线上的点，在霍夫参数空间($\rho$-$\theta$平面)中会交于一点。通过在参数空间中构建累加矩阵（accumulator），统计每个参数组合的投票数，从而可以找出最有可能的直线参数。
+
+\begin{equation}
+\rho = x\cos\theta + y\sin\theta
+\end{equation}
+
 \item 多项式曲线拟合
-在获取边缘点后，通过最小二乘法拟合车道线数学模型：
+
+在获取霍夫变换检测边缘图中的直线段后，对检测到的线段进行分类和过滤，收集分类后的端点作为拟合数据，再应用多项式拟合获得平滑的车道线，利用了霍夫变换在直线检测中的鲁棒性，同时结合复杂曲线的建模能力，可以有效应对复杂车道线情形。
 \begin{equation}
 y = a_0 + a_1x + a_2x^2 + a_3x^3
 \end{equation}
@@ -674,8 +687,8 @@ $3$次多项式模型可有效描述弯道曲率，为车道偏离预警提供�
 \caption{多项式拟合车道线}
 \label{fig:polynomial_fit}
 \end{figure}
-\end{parlist}
 
+\end{parlist}
 
 
 \subsection{语义分割技术}
