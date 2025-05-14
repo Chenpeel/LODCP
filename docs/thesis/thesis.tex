@@ -296,13 +296,14 @@
 \vspace{2em}
 
 \setlength{\parindent}{2em} % 设置首行缩进
-近年来，尽管中国汽车产业发展迅速、智能驾驶技术不断革新，交通事故发生率仍然居高不下。传统道路障碍检测方法面临精度不足、计算复杂度高以及人工依赖性强等问题。针对这些挑战，本研究提出了一种基于深度学习的车道障碍物检测与碰撞预警系统，通过融合视觉感知与运动预测技术，有效提升了行车安全预警能力。
 
-在车道识别方面，本系统创新性地结合传统图像处理与Fast-SCNN深度学习模型，显著增强了系统在复杂光照和恶劣天气条件下的车道线识别鲁棒性。采用多项式曲线拟合技术对检测到的边缘点进行数学建模，实现了精确的车道线表示和预测。
+近年来，中国汽车产业快速发展，智能驾驶技术持续创新，但交通事故发生率仍居高不下。传统道路障碍检测方法存在精度不足、计算复杂度高和人工依赖性强等局限性。为此，本研究提出了一种基于深度学习的车道障碍检测与碰撞预测系统。通过融合传统图像处理与深度学习技术，设计了多模块并行处理架构，有效提升了复杂场景下的障碍物识别与风险预警能力。
 
-为满足嵌入式平台上的实时障碍物检测需求，本研究在平衡精度与计算资源的基础上，采用轻量级YOLOv5n模型，并通过知识蒸馏技术优化模型性能。具体而言，以YOLOv5s作为教师模型，并对蒸馏后的模型进行剪枝与量化，在提高检测精度的同时显著减少了资源占用，使其适用于树莓派资源受限的嵌入式平台。
 
-针对多目标跟踪中常见的遮挡问题，本研究基于DeepSORT框架优化了跟踪算法，采用IoU度量机制改进了目标运动状态关联。系统通过并行处理架构同时执行目标检测和语义分割任务，并分析多帧目标运动轨迹与道路可行区域，构建了实时碰撞风险评估模型。实验结果表明，本方法在障碍物识别准确性、跟踪稳定性和碰撞预警时效性方面均表现出显著优势，特别是在计算资源受限的嵌入式环境中。
+具体而言，本研究结合Fast-SCNN深度学习模型与传统图像处理技术，采用多项式曲线拟合方法实现车道线精确识别与建模，显著提高了系统在复杂光照和恶劣天气条件下的鲁棒性。针对嵌入式平台的资源限制，采用轻量级YOLOv5n模型进行障碍物检测，并运用知识蒸馏、模型剪枝和量化等技术优化算法，以YOLOv5s作为教师模型提升检测性能，最终实现了算法的高效嵌入式部署。
+
+
+在跟踪算法方面，本研究基于DeepSORT框架进行优化，引入IoU度量机制与类别感知匹配策略，显著提高了多目标跟踪的准确性和鲁棒性。此外，通过构建综合风险评估模型，系统能够实时分析潜在碰撞风险并发出预警。该模型综合考虑时空风险因子、轨迹交叉程度和环境条件等因素，为驾驶安全决策提供了可靠支持。实验结果表明，所提方法在障碍物识别精度、跟踪稳定性和碰撞预警时效性等方面均表现优异，特别适合计算资源受限的嵌入式环境应用。
 
 
 \vspace{2em}
@@ -321,13 +322,12 @@
 \vspace{2em}
 
 \setlength{\parindent}{2em} % 设置首行缩进
-In recent years, despite the rapid development of China's automotive industry and continuous innovation in intelligent driving technology, the incidence of traffic accidents remains high. Traditional road obstacle detection methods face challenges such as insufficient accuracy, high computational complexity, and strong human dependency. Addressing these challenges, this research proposes a deep learning-based lane obstacle detection and collision warning system, effectively enhancing driving safety through the fusion of visual perception and motion prediction technologies.
 
-In terms of lane recognition, this system innovatively combines traditional image processing with the Fast-SCNN deep learning model, significantly enhancing the robustness of lane line recognition under complex lighting and adverse weather conditions. We employ polynomial curve fitting techniques to mathematically model detected edge points, achieving precise lane line representation and prediction.
+In recent years, China's automotive industry has developed rapidly, and intelligent driving technologies have continued to advance, yet traffic accident rates remain persistently high. Traditional road obstacle detection methods suffer from limitations such as insufficient accuracy, high computational complexity, and strong reliance on manual intervention. To address these challenges, this study proposes a deep learning-based lane obstacle detection and collision prediction system. By integrating traditional image processing with deep learning techniques, a multi-module parallel processing architecture is designed, significantly improving obstacle recognition and risk warning capabilities in complex scenarios.
 
-To meet the requirements for real-time obstacle detection on embedded platforms, this research adopts the lightweight YOLOv5n model while balancing accuracy and computational resources, and optimizes model performance through knowledge distillation technology. Specifically, we use YOLOv5s as the teacher model and perform pruning and quantization on the distilled model, significantly reducing resource consumption while improving detection accuracy, making it suitable for resource-constrained embedded platforms such as Raspberry Pi.
+Specifically, this research combines the Fast-SCNN deep learning model with traditional image processing techniques, employing polynomial curve fitting for precise lane line identification and modeling. This approach notably enhances system robustness under challenging lighting and adverse weather conditions. Considering the resource constraints of embedded platforms, a lightweight YOLOv5n model is adopted for obstacle detection, with algorithm optimization techniques including knowledge distillation, model pruning, and quantization. Using YOLOv5s as a teacher model to enhance detection performance, the study achieves efficient embedded deployment.
 
-For the common occlusion problems in multi-object tracking, this research optimizes the tracking algorithm based on the DeepSORT framework, improving object motion state association using IoU measurement mechanisms. The system simultaneously executes object detection and semantic segmentation tasks through a parallel processing architecture, and analyzes multi-frame object motion trajectories and road feasible regions to construct a real-time collision risk assessment model. Experimental results show that this method demonstrates significant advantages in obstacle recognition accuracy, tracking stability, and collision warning timeliness, especially in embedded environments with limited computational resources.
+For tracking algorithms, this work optimizes the DeepSORT framework by introducing an IoU metric mechanism and a category-aware matching strategy, substantially improving multi-object tracking accuracy and robustness. Furthermore, by constructing a comprehensive risk assessment model, the system can analyze potential collision risks in real time and issue warnings. This model incorporates spatiotemporal risk factors, trajectory intersection severity, and environmental conditions to provide reliable support for driving safety decisions. Experimental results demonstrate that the proposed method excels in obstacle recognition precision, tracking stability, and collision warning timeliness, making it particularly suitable for resource-constrained embedded environments.
 
 
 \vspace{2em}
