@@ -13,7 +13,8 @@
 \usepackage{amsthm}
 \usepackage{mathtools}
 \usepackage{unicode-math}
-\usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false]{biblatex}
+% \usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false]{biblatex}
+\usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false,url=true]{biblatex}
 \usepackage[top=2.8cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
 \usepackage{caption}
 \usepackage{fancyhdr}
@@ -211,6 +212,10 @@
 % 公式编号
 \numberwithin{equation}{section} % 按节编号
 
+% URL 和 DOI 自定义设置
+\DeclareFieldFormat{url}{\url{#1}}
+\DeclareFieldFormat{urldate}{#1}
+\ExecuteBibliographyOptions{url=false,doi=false,isbn=false}
 % 设置引用样式为上标带方括号
 \newcommand{\mycite}[1]{\textsuperscript{[}\supercite{#1}\textsuperscript{]}}
 \let\oldcite\cite
@@ -229,36 +234,56 @@
 % 标题页
 \begin{titlepage}
 \begin{center}
-\vspace*{1cm}
-\includegraphics[width=\textwidth]{figures/title.png}
-\vspace*{1cm}
-{\Huge \textbf{本科毕业设计说明书（论文）}}
-% \vspace*{1cm}
-% \includegraphics[width=\textwidth]{figures/icon.png}
+\vspace*{0.3cm}
+\includegraphics[width=\textwidth]{figures/head.png}
+\vspace*{0.3cm}
+{\zihao{-0} \textbf{本科毕业设计说明书（论文）}}
 \vspace{1.5cm}
 
+\begin{minipage}{15cm}
+% 中文题目：宋体，三号字，加粗
+\zihao{3}\songti\bf
+\noindent \textbf{中文题目：}\underline{\centering{\textbf{基于深度学习的车道障碍检测与碰撞预测方法研究}}}
 
-{\Large \textbf{基于深度学习的车道障碍检测与碰撞预测方法研究}}
+\vspace{0.8cm}
 
-{\Large \textbf{Research on Deep Learning-Based Lane Obstacle Detection and Collision Prediction Methodology}}
+% 英文题目：Times New Roman，三号字，加粗
+
+\noindent \textbf{英文题目：}
+\zihao{3}\rmfamily\bfseries
+\underline{\centering{\textbf{Research On Deep Learning-Based Lane Obstacle}}}
+\underline{\centering{\textbf{Detection And Collision Prediction Methodology}}}
+
 \vspace{1.5cm}
 
-{\large
-\begin{tabular}{rl}
-学院（部）： & 计算机科学与工程学院 \\
-\\
-专业班级： & 计算机科学与技术21-4 \\
-\\
-学生姓名： & 陈亚辉 \\
-\\
-指导教师： & 郑苹讲师 \\
-\end{tabular}}
+% 个人信息：宋体，三号，加粗
+\zihao{3}\songti\bf
+\centering\textbf{学\hspace{2em}院：}\underline{\makebox[14em][c]{\textbf{计算机科学与工程学院}}}
+
+\vspace{0.3cm}
+\centering\textbf{专\hspace{2em}业：}\underline{\makebox[14em][c]{\textbf{计算机科学与技术}}}
+
+\vspace{0.3cm}
+\centering\textbf{班\hspace{2em}级：}\underline{\makebox[14em][c]{\textbf{21计科4班}}}
+
+\vspace{0.3cm}
+\centering\textbf{学\hspace{2em}号：}\underline{\makebox[14em][c]{\textbf{2021304369}}}
+
+\vspace{0.3cm}
+\centering\textbf{姓\hspace{2em}名：}\underline{\makebox[14em][c]{\textbf{陈亚辉}}}
+
+\vspace{0.3cm}
+\centering \textbf{指导老师：}\underline{\makebox[14em][c]{\textbf{郑苹讲师}}}
+\vspace{0.3cm}
+
+\end{minipage}
 \vfill
-\vspace{0.5cm}
 {\large 2025 年 4 月 30 日}
 \end{center}
 \end{titlepage}
 \thispagestyle{empty} % 标题页无页码和页眉
+
+
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \pagenumbering{Roman}
 % 中文摘要页
@@ -514,7 +539,7 @@ BF[I]_p = \frac{1}{W_p}\sum_{q \in S}G_{\sigma_s}(||p-q||)G_{\sigma_r}(|I_p-I_q|
 
 \end{parlist}
 
-在实际车载系统开发中，需根据传感器特性和环境条件选择适配的滤波策略，本文采用的CMOS相机受限于传感器特性易产生椒盐噪声，采用中值滤波预处理；而在低光照条件下，高斯滤波结合亮度自适应阈值可提升夜间视觉效果；对于需要实时处理的场景，可采用积分图技术加速均值滤波，将复杂度降至$O(1)$；对于道路常见的光照不均匀场景，采用各向异性扩散滤波获取更优的特征。
+在实际车载系统开发中，需根据传感器特性和环境条件选择适配的滤波策略，CMOS相机受限于传感器特性易产生椒盐噪声，采用中值滤波预处理；而在低光照条件下，高斯滤波结合亮度自适应阈值可提升夜间视觉效果；对于需要实时处理的场景，可采用积分图技术加速均值滤波，将复杂度降至$O(1)$；对于道路常见的光照不均匀场景，采用各向异性扩散滤波获取更优的特征。
 
 \subsubsection{形态学运算}
 
@@ -569,13 +594,13 @@ A \bullet B = (A \oplus B) \ominus B
 \begin{halfparlist}
     \item 基于一阶梯度的检测算法，如Sobel、Prewitt算子，通过计算像素值梯度的幅值与方向识别边界；
 
-    \item 基于二阶导数的检测算法，采用拉普拉斯等二阶差分运算定位边缘区域，如LoG（Laplacian of Gaussian）；
+    \item 基于二阶导数的检测算法，采用拉普拉斯等二阶差分运算定位边缘区域，如LoG（Laplacian of Gaussian）\cite{kong2013generalized}；
 
     \item 基于Canny准则的多阶段算法，通过系统化处理实现亚像素级边缘提取；
 
-    \item 基于多尺度分析的高级方法，如DoG（高斯差分）和小波变换，能够捕获不同尺度的边缘特征；
+    \item 基于多尺度分析的高级方法，如DoG（Difference of Guassian）\cite{chen2021joint}和小波变换，能够捕获不同尺度的边缘特征；
 
-    \item 基于深度学习的端到端方法，如HED、RCF和DexiNed，直接从数据中学习边缘特征表示。
+    \item 基于深度学习的端到端方法，如HED（Holistically-Nested Edge Detection），RCF（Richer Convolutional Features for Edge Detection）等\cite{xie2015holistically,liu2017richer}，直接从数据中学习边缘特征表示。
 \end{halfparlist}
 
 
@@ -641,7 +666,6 @@ DoG(x,y,\sigma_1,\sigma_2) = G(x,y,\sigma_1) - G(x,y,\sigma_2)
 \begin{circledlist}
 \item HED (Holistically-Nested Edge Detection)：利用全卷积网络和深度监督机制，同时结合浅层特征和深层语义信息
 \item RCF (Richer Convolutional Features)：整合多层卷积特征，提升边缘检测的精度和语义理解能力
-\item DexiNed (Dense Extreme Inception Network)：通过创新的网络结构实现无需预训练的高精度边缘检测
 \end{circledlist}
 
 深度学习方法的优势在于能够从数据中自动学习边缘特征表示，区分有语义意义的边缘与无意义的纹理，在复杂场景中表现出优越性能。
@@ -662,7 +686,7 @@ E_{final} = \alpha \cdot E_{traditional} + (1-\alpha) \cdot E_{deep}
 \begin{parlist}
 \item 霍夫变换
 
-霍夫变换（Hough Transform）是用于检测参数化几何形状（如直线、圆、椭圆等）的经典特征提取技术，其核心是将笛卡尔坐标系中的点映射到参数空间，通过累加统计找出最可能的几何形状。
+霍夫变换（Hough Transform）\cite{illingworth1988survey}是用于检测参数化几何形状（如直线、圆、椭圆等）的经典特征提取技术，其核心是将笛卡尔坐标系中的点映射到参数空间，通过累加统计找出最可能的几何形状。
 
 在直线检测中，霍夫变换利用直线的参数表示法。通常，一条直线可以用极坐标形式表示，而笛卡尔空间中位于同一直线上的点，在霍夫参数空间($\rho$-$\theta$平面)中会交于一点。通过在参数空间中构建累加矩阵（accumulator），统计每个参数组合的投票数，从而可以找出最有可能的直线参数。
 
@@ -745,7 +769,7 @@ r_{ij} = \frac{exp(s_{ij})}{\sum_{k}^{}\exp(s_{ik})},\quad s_{ij} = \langle W_{q
 
 
 语义分割为环境提供了像素级的理解，而目标检测则进一步实现了对场景中独立实体的识别与定位。在智能驾驶场景中，准确检测和跟踪道路上的各类移动障碍物是避免碰撞的前提。
-现代目标检测技术已由早期的传统特征提取方法（如HOG、SIFT等）发展为基于深度学习的端到端解决方案，大幅提升了检测精度和鲁棒性。
+现代目标检测技术已由早期的传统特征提取方法，如HOG（Histogram of Oriented Gradients）、SIFT（Scale-Invariant Feature Transform）等\cite{dalal2005histograms,lowe2004distinctive}。发展为基于深度学习的端到端解决方案，大幅提升了检测精度和鲁棒性。
 
 目标跟踪作为智能驾驶感知系统的关键环节，承担着将离散检测结果关联为连续时空轨迹的核心任务。
 在复杂交通场景中，遮挡、相似外观目标、光照变化等因素使得稳定跟踪面临巨大挑战。本研究选择DeepSORT作为基础框架，通过多项创新设计增强其在车载环境中的鲁棒性。
@@ -1156,8 +1180,10 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
     \centering
     \includegraphics[width=0.45\textwidth]{figures/chapter4/a.jpg}
     \includegraphics[width=0.45\textwidth]{figures/chapter4/b.jpg}
-
-    \caption{(a) 城市道路检测效果 (b) 复杂环境下检测效果 \\目标检测效果}
+    \begin{center}
+    (a) 目标检测（昼） \hspace{3cm} (b) 目标检测（夜）
+    \end{center}
+    \caption{复杂路况检测效果}
     \label{fig:detection}
 \end{figure}
 
@@ -1587,39 +1613,37 @@ c_{ij} = \lambda \cdot d_{motion}(i,j) + (1-\lambda) \cdot d_{appearance}(i,j)
 
 \subsubsection{特征度量}
 
-在资源受限的嵌入式平台上实现高效的特征表示和度量是一个显著挑战。开发了一套轻量级特征度量方法，适合嵌入式低功耗设备。
-\begin{parlist}
+考虑到嵌入式设备运行时资源限制严格，以及道路场景中目标运动具有时空连贯性的特点，本文对传统DeepSORT中基于深度学习的特征度量方法进行了适当简化和优化。
 
+\begin{parlist}
 
 \item 外观特征简化
 
-考虑到在嵌入式设备运行的资源局限，及在道路使用上的时空连贯性，本文简化了传统DeepSORT中基于深度学习的特征提取过程，改用更高效的几何和运动特征：
-
 \begin{halfparlist}
-    \item 边界框宽高比：$r = w/h$
-    \item 尺寸一致性：$s_{cons} = \min(w_1/w_2, w_2/w_1) \cdot \min(h_1/h_2, h_2/h_1)$
-    \item 运动一致性：通过速度向量余弦相似度计算
+    \item 边界框宽高比：$r = w/h$，此比值能有效表征目标的形态特征
+    \item 尺寸一致性：$s_{cons} = \min(w_1/w_2, w_2/w_1) \cdot \min(h_1/h_2, h_2/h_1)$，用于评估前后帧目标大小变化的合理性
+    \item 运动一致性：通过速度向量余弦相似度计算，反映目标运动方向的连续性
 \end{halfparlist}
 
-这些特征组合形成了的轻量级表观描述符。
+这些精心选取的特征组合构成了一个既高效又实用的轻量级表观描述符，能够在计算资源有限的条件下有效区分不同目标。
 
 \item IoU作为主要相似度度量
 
-本文主要依赖IoU（交并比，Intersection over Union）作为关联度量，这是因为IoU能够有效地表达两个边界框之间的空间重叠关系，为目标跟踪提供稳定可靠的度量标准。IoU的计算方式如下：
+本文主要依赖IoU（交并比，Intersection over Union）作为目标关联度量标准。这一选择源于IoU能够有效地表征两个边界框之间的空间重叠关系，为目标跟踪提供稳定可靠的度量基准。IoU的计算公式如下：
 
 \begin{equation}
 IoU(A, B) = \frac{\text{Area}(A \cap B)}{\text{Area}(A \cup B)}
 \end{equation}
 
-其中，$A$表示预测框，$B$表示检测框，$A \cap B$表示两个框的交集区域，$A \cup B$表示两个框的并集区域。IoU值范围为$[0,1]$，值越大表示两个框的重叠程度越高，相似度越高。
+其中，$A$表示预测框，$B$表示检测框，$A \cap B$表示两个框的交集区域面积，$A \cup B$表示两个框的并集区域面积。IoU值范围为$[0,1]$，值越大表示两个框的重叠程度越高，相似度越大。
 
-与传统的马氏距离等纯距离度量相比，IoU具有以下优势：
+与传统的马氏距离等纯距离度量相比，IoU具有以下显著优势：
 
 \begin{halfparlist}
-\item 几何解释明确：直观地表达了两个边界框的重叠程度，便于理解和调整
-\item 尺度不变性：不受目标大小变化的影响，对近处大目标和远处小目标都能公平对待
-\item 形状敏感：考虑了边界框的形状和方向，而非仅仅关注中心点距离
-\item 计算效率高：实现简单，计算开销较小
+\item 几何解释明确：直观地表达了两个边界框的重叠程度，便于理解和算法调整
+\item 尺度不变性：不受目标大小变化的影响，对近处大目标和远处小目标均能公平对待
+\item 形状敏感：综合考虑了边界框的形状和方向信息，而非仅仅关注中心点距离
+\item 计算效率高：实现简单，计算开销较小，适合嵌入式平台部署
 \end{halfparlist}
 
 在本文的跟踪关联阶段，基于IoU构建了关联度量函数：
@@ -1628,16 +1652,16 @@ IoU(A, B) = \frac{\text{Area}(A \cap B)}{\text{Area}(A \cup B)}
 d_{IoU}(i,j) = 1 - IoU(i,j)
 \end{equation}
 
-其中，$i$代表跟踪轨迹中的目标，$j$代表当前帧检测到的目标。在数据关联过程中，当$d_{IoU}(i,j) \leq t_{IoU}$时（其中$t_{IoU}$为预设阈值），检测框$j$与跟踪目标$i$具有关联可能性。
+其中，$i$代表跟踪轨迹中的目标，$j$代表当前帧检测到的目标。在数据关联过程中，当$d_{IoU}(i,j) \leq t_{IoU}$时（其中$t_{IoU}$为预设阈值），检测框$j$与跟踪目标$i$被认为具有关联可能性，进入后续匹配流程。
 
-此外，在处理复杂场景时，对基本IoU度量进行了改进，综合考虑了目标的运动一致性和外观特征相似度，从而进一步提高了跟踪的鲁棒性。
+此外，针对复杂场景中的目标跟踪挑战，我们对基本IoU度量进行了改进，综合考虑了目标的运动一致性和外观特征相似度，从而进一步提高了跟踪算法的鲁棒性和准确性。
 
 \item 类别感知匹配
 
-在关联阶段引入目标类别信息，仅允许同类目标之间的匹配（如汽车与汽车、行人与行人匹配），这显著提升了多类别目标跟踪的准确性。
+本文在关联阶段引入了目标类别信息，实现了类别约束匹配机制，即仅允许同类目标之间的匹配。这一策略显著提升了多类别目标跟踪的准确性，有效避免了不同类别目标之间的错误关联，特别是在目标密集交叉的复杂场景中表现出色。
 
 
-这种设计权衡该辅助系统能够在资源受限的嵌入式设备上实现实时目标跟踪，同时保持足够的精度用于驾驶决策支持，结果如图\ref{fig:track_result}所示。
+这种经过精心设计的特征度量方案实现了在资源受限的嵌入式设备上的实时目标跟踪，同时保持了足够的精度用于驾驶决策支持。跟踪效果如图\ref{fig:track_result}所示。
 
 \begin{figure}[H]
     \centering
@@ -1645,20 +1669,24 @@ d_{IoU}(i,j) = 1 - IoU(i,j)
         \centering
         \includegraphics[width=\linewidth]{figures/chapter4/track1.jpg}
         \par\vspace{0.5em}
-        （a）第95帧
+        （a）第95帧跟踪结果
     \end{minipage}
     \hfill
     \begin{minipage}[t]{0.48\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures/chapter4/track2.jpg}
         \par\vspace{0.5em}
-        （b）第300帧
+        （b）第300帧跟踪结果
     \end{minipage}
-    \caption{障碍跟踪}
+    \caption{障碍物跟踪效果展示}
     \label{fig:track_result}
 \end{figure}
-通过以上优化，障碍物跟踪能够在资源受限嵌入式设备上高效运行，同时保持车载场景所需的跟踪精度和稳定性。系统在模拟环境和真实道路测试中均展现出稳定的跟踪能力，为后续的碰撞风险评估提供可靠基础。
+
+通过以上系统性优化，本文提出的障碍物跟踪算法能够在资源受限的嵌入式设备上高效运行，同时保持车载场景所需的跟踪精度和稳定性。系统在模拟环境和真实道路测试中均展现出稳定的跟踪性能和鲁棒性，为后续的碰撞风险评估提供了可靠的数据基础，有力支持了安全驾驶辅助功能的实现。
 \end{parlist}
+
+
+
 
 
 
@@ -1804,6 +1832,8 @@ Alert = \begin{cases}
 \begin{parlist}
     \item 极端场景适应性：当前系统在极端天气条件（如大雪、浓雾）和低光照环境下表现仍有待提高。特别是在雨雪导致的路面反光和模糊视野情况下，车道线检测准确率明显下降，影响系统整体可靠性。
 
+    \item 目标检测种类不足：目标检测模型的训练类别较少，这对后期碰撞预测的分级、分类别碰撞预测有一定影响，分类较少可能导致碰撞预测概率失误。
+
     \item 目标遮挡处理：虽然改进了跟踪算法，但在严重遮挡场景下，目标轨迹预测仍存在不稳定性。尤其是在车流密集的城市道路环境中，部分遮挡导致的ID切换问题影响了碰撞风险评估的连续性。
 
     \item 计算资源平衡：为适应嵌入式平台，模型参数进行了大幅精简，牺牲了部分检测精度。这种权衡使系统在某些复杂场景下可能漏检小尺寸或远距离目标，特别是在高速行驶环境中。
@@ -1818,6 +1848,8 @@ Alert = \begin{cases}
 基于本研究的成果和局限性，未来研究可在以下方向进一步拓展：
 
 \begin{parlist}
+    \item 丰富数据集中的类别，通过多数据集融合，训练更多类别的目标检测，丰富障碍物种类，从而对不同障碍物的碰撞风险因子改进，达到更优的碰撞预测效果，降低在一般场景下的误报率。
+
     \item 多模态感知融合：整合摄像头、毫米波雷达和超声波传感器的互补优势，构建多模态感知系统，提高全天候和全场景感知能力。特别是在视觉受限条件下，雷达数据可提供可靠的距离和速度信息，增强系统的环境适应性。
 
     \item 动态场景理解增强：引入基于注意力机制的时空序列模型，如Transformer架构，提升系统对交通参与者意图和行为的预测能力。这将使预警系统从单纯的碰撞预测向行为理解与风险推理方向发展。
