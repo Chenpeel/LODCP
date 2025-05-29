@@ -1,0 +1,79 @@
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{ctex}  % 支持中文
+\usepackage{geometry}
+
+\geometry{a4paper, margin=1in}
+
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, backgrounds, calc, shadows, chains, decorations.pathreplacing, matrix, shapes.symbols}
+
+\begin{document}
+
+
+\vspace{1cm}
+
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={
+        rectangle,
+        draw=black,
+        thick,
+        fill=blue!10,
+        text width=5cm,
+        text centered,
+        rounded corners,
+        minimum height=1cm,
+        drop shadow
+    },
+    smallbox/.style={
+        rectangle,
+        draw=black,
+        thick,
+        fill=blue!10,
+        text width=3.5cm,
+        text centered,
+        rounded corners,
+        minimum height=0.8cm,
+        drop shadow
+    },
+    line/.style={
+        draw,
+        thick,
+        -latex'
+    },
+    title/.style={
+        font=\large\bfseries
+    }
+]
+
+% 标题
+
+% 基本贪心匹配算法流程
+\node[box] at (0, -2) (input) {输入: 轨迹集合 $\mathcal{T}$、检测框集合 $\mathcal{D}$、阈值 $\tau$};
+\node[box, below=of input] (cost) {构建代价矩阵 $\mathbf{C}$ \\ $c_{ij} = \lambda \cdot d_{motion}(i,j) + (1-\lambda) \cdot d_{appearance}(i,j)$};
+\node[box, below=of cost] (flatten) {将代价矩阵 $\mathbf{C}$ 展平并按代价值升序排序};
+\node[box, below=of flatten] (iterate) {按代价值从小到大遍历排序后的$(i,j)$对};
+\node[box, below=of iterate] (check) {检查: $c_{ij} \leq \tau$ 且 $T_i$, $D_j$ 均未匹配};
+\node[box, below=of check] (match) {添加匹配对$(T_i, D_j)$至结果集 $\mathcal{M}$\\移除已匹配的轨迹和检测框};
+\node[box, below=of match] (output) {输出: 匹配集合 $\mathcal{M}$、未匹配轨迹 $\mathcal{T}_{unmatched}$、未匹配检测框 $\mathcal{D}_{unmatched}$};
+
+\draw [line] (input) -- (cost);
+\draw [line] (cost) -- (flatten);
+\draw [line] (flatten) -- (iterate);
+\draw [line] (iterate) -- (check);
+\draw [line] (check) -- node[right] {是} (match);
+\draw [line] (match) -- (output);
+
+% 检查失败时的循环
+\draw [line] (check.west) -- ++(-1,0) |- (iterate.west);
+\node [left of=check, xshift=-0.5cm] {否};
+
+
+
+
+\end{tikzpicture}
+
+\end{document}

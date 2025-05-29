@@ -1,0 +1,61 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{enumitem}
+
+% 中文支持
+\usepackage{xeCJK}
+\setCJKmainfont{STSong}  % 可以替换为您系统中可用的中文字体，如: STSong, SimHei, Microsoft YaHei等
+
+\usetikzlibrary{shapes,arrows,positioning}
+
+\begin{document}
+
+% 插入图形代码
+\begin{tikzpicture}[
+node distance=4mm,
+module/.style={rectangle, draw=blue!50, fill=blue!10, thick, minimum width=15mm, minimum height=3mm, align=center, font=\small},
+decision/.style={diamond, draw=green!50, fill=green!10, thick, aspect=2, align=center, font=\small},
+data/.style={ellipse, draw=red!50, fill=red!10, thick, align=center, font=\small},
+arrow/.style={->, >=stealth, thick}
+]
+
+% 节点定义
+\node[data] (input) {检测框序列$D_t=\{d_1,\ldots,d_n\}$};
+\node[module, below=of input] (kf_predict) {卡尔曼滤波预测\\$\mathbf{x}_k = \mathbf{F}\mathbf{x}_{k-1}$};
+\node[decision, below=of kf_predict] (association) {级联匹配\\$\min\sum C_{i,j}\phi(i,j)$};
+\node[module, left=of association, xshift=-0.5mm] (appearance) {外观特征提取\\CNN模型};
+\node[module, right=of association, xshift=0.5mm] (motion) {运动特征计算\\马氏距离};
+\node[decision, below=of association] (unmatched) {未匹配\\检测/轨迹};
+\node[module, below left=of unmatched, xshift=0.5mm] (new_track) {创建新轨迹\\$T_{init}$};
+\node[module, below right=of unmatched, xshift=0.5mm] (delete_track) {删除旧轨迹\\$Age>T_{age}$};
+\node[module, below=of new_track, xshift=3mm] (update) {状态更新\\$\mathbf{x}_k = \mathbf{x}_k + \mathbf{K}(\mathbf{z}_k-\mathbf{H}\mathbf{x}_k)$};
+\node[data, below=of update] (output) {跟踪结果$T_t=\{t_1,\ldots,t_m\}$};
+
+% 连接路径
+\draw[arrow] (input) -- (kf_predict);
+\draw[arrow] (kf_predict) -- (association);
+\draw[arrow] (appearance) -- (association);
+\draw[arrow] (motion) -- (association);
+\draw[arrow] (association) -- (unmatched);
+\draw[arrow] (unmatched) -| node[above left, font=\scriptsize] {新检测} (new_track);
+\draw[arrow] (unmatched) -| node[above right, font=\scriptsize] {失配轨迹} (delete_track);
+\draw[arrow] (new_track) -- (update);
+\draw[arrow] (update) -- (output);
+
+% 侧边注释 - 移动到了更合适的位置
+\node[text width=1.8cm, font=\scriptsize, anchor=west] at (4,-2) (note1) {
+匹配策略：
+\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+\item IoU关联
+\item 外观相似度
+\item 运动一致性
+\end{itemize}
+};
+
+\draw[->, dashed] (note1) -- (association);
+
+\end{tikzpicture}
+
+\end{document}

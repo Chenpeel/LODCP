@@ -1,0 +1,2353 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>基于视频序列的车道障碍物检测与碰撞风险评估</title>
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Font Awesome CDN -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <!-- Chart.js CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            :root {
+                --highlight-color: #00aeef;
+                --bg-dark: #555;
+                --card-bg: #555;
+                --text-light: #e0e0e0;
+                --text-gray: #aaaaaa;
+                font-size: 120%
+            }
+
+            body {
+                background-color: var(--bg-dark);
+                color: var(--text-light);
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Helvetica, Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* 全局增大文字大小 */
+            p, span, li, td, th, div {
+                font-size: 1.1rem; /* 增大普通文字 */
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+                font-size: 1.2em; /* 对所有标题元素增大字体 */
+            }
+
+            /* 针对Tailwind类的覆盖 */
+            .text-xs { font-size: 0.9rem !important; }
+            .text-sm { font-size: 1rem !important; }
+            .text-base { font-size: 1.1rem !important; }
+            .text-lg { font-size: 1.25rem !important; }
+            .text-xl { font-size: 1.5rem !important; }
+            .text-2xl { font-size: 1.75rem !important; }
+            .text-3xl { font-size: 2.25rem !important; }
+            .text-4xl { font-size: 2.75rem !important; }
+            .text-5xl { font-size: 3.5rem !important; }
+            .text-6xl { font-size: 4rem !important; }
+
+
+            .main-card {
+                background-color: var(--card-bg);
+                border-radius: 1.5rem;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+                padding: 1.5rem;
+                margin: 0.5rem; /* 减少外边距 */
+                opacity: 1;
+                transition:
+                    transform 0.5s ease,
+                    opacity 0.5s ease;
+                height: auto;
+                max-height: 95vh; /* 增加最大高度 */
+                overflow-y: auto;
+            }
+
+            .mini-card {
+                background-color: var(--card-bg);
+                border-radius: 0.75rem;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                padding: 1rem; /* 减小内边距 */
+                margin: 0.4rem; /* 减小外边距 */
+                overflow-y: visible;
+            }
+
+            .mini-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            }
+
+            .visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .highlight {
+                color: var(--highlight-color);
+            }
+
+            .section-title {
+                display: flex;
+                align-items: center;
+                font-size: 2.25rem;
+                font-weight: 700;
+                margin-bottom: 1.5rem;
+                padding-bottom: 0.75rem;
+                position: relative;
+            }
+
+            .section-title::after {
+                content: "";
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100px;
+                height: 4px;
+                background: var(--highlight-color);
+            }
+
+            .gradient-bg {
+                background: linear-gradient(
+                    135deg,
+                    rgba(0, 174, 239, 0.7),
+                    rgba(0, 174, 239, 0.3)
+                );
+                border-radius: 0.75rem;
+                padding: 1.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .slide {
+                height: 100vh; /* 使用整个视口高度 */
+                width: 100vw;
+                position: absolute;
+                top: 0;
+                left: 0;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+                overflow-y: auto;
+                padding: 1.5rem 2rem; /* 减少顶部和底部的内边距 */
+                scrollbar-width: thin;
+                scrollbar-color: var(--highlight-color) rgba(0, 0, 0, 0.2);
+                z-index: -1;
+            }
+
+            /* 美化滚动条样式 */
+            .slide::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .slide::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+            }
+
+            .slide::-webkit-scrollbar-thumb {
+                background: var(--highlight-color);
+                border-radius: 10px;
+            }
+
+            .slide-container {
+                width: 100%;
+                height: calc(100vh - 80px);
+                position: relative;
+                overflow: hidden;
+                flex: 1;
+                max-width: 100vw; /* 确保不超出屏幕宽度 */
+            }
+
+            .progress-bar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                height: 5px;
+                background-color: var(--highlight-color);
+                transition: width 0.3s ease;
+                z-index: 100;
+            }
+
+            .image-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: hidden;
+                border-radius: 0.75rem;
+            }
+
+            .image-container img {
+                width: 80%; /* 将图片缩小到原来的80% */
+                height: auto;
+                margin: 0 auto; /* 使图片居中 */
+                display: block;
+                border-radius: 0.75rem;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                transition: transform 0.3s ease;
+                max-height: 50vh; /* 限制图片最大高度 */
+                object-fit: contain; /* 保持图片比例 */
+            }
+
+            .image-container img:hover {
+                transform: scale(1.03); /* 保持悬停效果 */
+            }
+
+            .mega-number {
+                font-size: 5rem;
+                font-weight: 800;
+                line-height: 1;
+                color: var(--highlight-color);
+                margin-bottom: 0.5rem;
+                text-shadow: 0 0 15px rgba(0, 174, 239, 0.5);
+                background: linear-gradient(
+                    135deg,
+                    var(--highlight-color),
+                    #0077be
+                );
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                display: inline-block;
+                transform: translateZ(0);
+            }
+
+            .chapter-number {
+                font-size: 8rem;
+                font-weight: 900;
+                opacity: 0.15;
+                position: absolute;
+                top: -20px;
+                right: 30px;
+                z-index: -1;
+            }
+
+            .step-card {
+                position: relative;
+                padding-left: 60px;
+            }
+
+            .step-card::before {
+                content: attr(data-step);
+                position: absolute;
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 45px;
+                height: 45px;
+                background-color: var(--highlight-color);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-weight: bold;
+                font-size: 1.25rem;
+            }
+
+            .blurry-bg {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-position: center;
+                background-size: cover;
+                opacity: 0.15;
+                filter: blur(15px);
+                z-index: -1;
+                transform: scale(1.1);
+            }
+
+            .metric-value {
+                font-size: 3.5rem;
+                font-weight: 800;
+                color: var(--highlight-color);
+                line-height: 1;
+                margin-bottom: 0.25rem;
+            }
+
+            .metric-unit {
+                font-size: 1rem;
+                font-weight: 600;
+                color: var(--text-gray);
+                margin-bottom: 1rem;
+            }
+
+            .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1rem 0;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                text-align: left;
+            }
+
+            .data-table th {
+                font-weight: 600;
+                color: var(--highlight-color);
+            }
+
+            .data-table tr:hover td {
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+
+            .chart-container {
+                position: relative;
+                width: 100%;
+                height: 300px;
+            }
+
+            /* 添加新的分页指示器样式 */
+            .pagination-indicator {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                gap: 5px;
+                z-index: 100;
+            }
+
+            .pagination-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background-color: rgba(255, 255, 255, 0.3);
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .pagination-dot.active {
+                background-color: var(--highlight-color);
+                transform: scale(1.2);
+            }
+            /* 车道线提取步骤卡片特殊样式 */
+            .lane-step-card {
+                cursor: pointer;
+                transition: all 0.3s ease;
+                flex: 1;
+                min-width: 150px;
+            }
+            .lane-step-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            }
+            .lane-step-card.active {
+                border: 2px solid var(--highlight-color);
+                box-shadow: 0 0 15px rgba(0, 174, 239, 0.5);
+            }
+            .lane-step-card .image-container {
+                display: none;
+            }
+            .lane-display-area {
+                height: 350px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-top: 20px;
+                background-color: rgba(0, 0, 0, 0.3);
+                border-radius: 0.75rem;
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+            .lane-display-area img {
+                max-height: 300px;
+                max-width: 100%;
+                object-fit: contain;
+            }
+
+            /* 响应式调整 */
+            @media (max-width: 768px) {
+                .section-title {
+                    font-size: 1.75rem;
+                }
+
+                .mega-number {
+                    font-size: 3.5rem;
+                }
+
+                .mini-card {
+                    padding: 1rem;
+                }
+
+                .chapter-number {
+                    font-size: 6rem;
+                    top: -15px;
+                    right: 15px;
+                }
+            }
+
+            @media (max-width: 640px) {
+                .section-title {
+                    font-size: 1.5rem;
+                }
+
+                .slide {
+                    padding: 1rem;
+                }
+
+                .mega-number {
+                    font-size: 3rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="slide-container">
+            <!-- 封面页 -->
+            <div class="slide">
+                <div class="flex flex-col justify-center items-center h-full">
+                    <div class="max-w-5xl w-full">
+                        <div
+                            class="main-card flex flex-col justify-center items-center text-center"
+                        >
+                            <img src="../figures/school.png" alt="徽标" />
+                            <br />
+                            <h1 class="text-5xl md:text-6xl font-bold mb-4">
+                                <i
+                                    class="fas fa-road text-6xl highlight mb-8"
+                                ></i>
+                                基于深度学习的车道障碍检测与碰撞预测方法研究
+                            </h1>
+                            <h2
+                                class="text-xl md:text-2xl font-semibold text-gray-400 mb-12"
+                            >
+                                Research On Deep Learning-Based Lane Obstacle
+                                Detection And Collision Prediction Methodology
+                            </h2>
+
+                            <div class="mt-16">
+                                <span class="text-xl text-gray-300">
+                                    学生：陈亚辉
+                                </span>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <span class="text-xl text-gray-300">
+                                    指导老师：郑苹讲师
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--研究背景 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i
+                                class="fas fa-book-open text-3xl mr-4 highlight"
+                            ></i>
+                            研究背景及意义
+                        </h2>
+                        <span class="chapter-number">1</span>
+                    </div>
+
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+                    >
+                        <!-- 汽车保有量 -->
+                        <div class="mini-card">
+                            <div class="mega-number">3.36亿</div>
+                            <h3 class="text-xl font-bold mb-2">汽车保有量</h3>
+                            <p class="text-gray-400">
+                                截至2023年我国汽车保有量
+                            </p>
+                            <span class="text-xs text-gray-500 mt-2"
+                                >National Vehicle Inventory</span
+                            >
+                        </div>
+
+                        <!-- 驾驶员数量 -->
+                        <div class="mini-card">
+                            <div class="mega-number">4.86亿</div>
+                            <h3 class="text-xl font-bold mb-2">驾驶员数量</h3>
+                            <p class="text-gray-400">
+                                中国驾驶证持有人数量总数
+                            </p>
+                            <span class="text-xs text-gray-500 mt-2"
+                                >Licensed Drivers</span
+                            >
+                        </div>
+
+                        <!-- 事故致死 -->
+                        <div class="mini-card">
+                            <div class="mega-number">135万</div>
+                            <h3 class="text-xl font-bold mb-2">交通事故致死</h3>
+                            <p class="text-gray-400">
+                                2010年以来全球年均道路交通事故致死人数
+                            </p>
+                            <span class="text-xs text-gray-500 mt-2"
+                                >Annual Traffic Casualties</span
+                            >
+                        </div>
+
+                        <!-- 经济损失 -->
+                        <div class="mini-card">
+                            <div class="mega-number">3%</div>
+                            <h3 class="text-xl font-bold mb-2">GDP损失</h3>
+                            <p class="text-gray-400">
+                                交通事故造成的经济损失约占多数国家GDP比例
+                            </p>
+                            <span class="text-xs text-gray-500 mt-2"
+                                >Economic Impact</span
+                            >
+                        </div>
+                    </div>
+
+                    <div class="gradient-bg">
+                        <h3 class="text-xl font-bold mb-4">研究目的</h3>
+                        <p class="text-gray-200">
+                            本文提出了一种针对视频序列的车道障碍物检测与碰撞风险评估框架，包含视频数据采集、道路特征提取与语义分割、基于深度学习的目标检测算法设计、多目标跟踪系统开发、碰撞概率建模及其分级预警机制的建立。该方案兼顾实时性需求，可高效识别复杂场景中的多类障碍物潜在风险，具备良好的经济性，可适配于各类低成本车载安全预警装置。
+                        </p>
+                    </div>
+
+                    <div class="mt-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- 自动驾驶系统效益 -->
+                            <div class="mini-card">
+                                <h3 class="text-xl font-bold mb-3 highlight">
+                                    智能辅助驾驶系统优势
+                                </h3>
+                                <ul
+                                    class="list-disc list-inside text-gray-300 space-y-2"
+                                >
+                                    <li>
+                                        追尾事件减少
+                                        <span class="highlight font-bold"
+                                            >45.7%</span
+                                        >
+                                    </li>
+                                    <li>
+                                        侧面碰撞减少
+                                        <span class="highlight font-bold"
+                                            >17.1%</span
+                                        >
+                                    </li>
+                                    <li>
+                                        行驶测试
+                                        <span class="highlight font-bold"
+                                            >981万</span
+                                        >
+                                        公里，仅发生18起轻微碰撞
+                                    </li>
+                                    <li>多数事故由外部车辆操作不当引发</li>
+                                    <li>显著提升复杂交通环境的适应能力</li>
+                                </ul>
+                            </div>
+
+                            <!-- 道路障碍物分类 -->
+                            <div class="mini-card">
+                                <h3 class="text-xl font-bold mb-3 highlight">
+                                    道路障碍物分类
+                                </h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 class="font-bold mb-2">人为因素</h4>
+                                        <ul
+                                            class="list-disc list-inside text-gray-300 space-y-1 text-sm"
+                                        >
+                                            <li>行人</li>
+                                            <li>机动车</li>
+                                            <li>其他动态实体</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold mb-2">自然因素</h4>
+                                        <ul
+                                            class="list-disc list-inside text-gray-300 space-y-1 text-sm"
+                                        >
+                                            <li>地质灾害</li>
+                                            <li>极端天气产生的路障</li>
+                                            <li>静态障碍物</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 文章架构 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i
+                                class="fas fa-sitemap text-3xl mr-4 highlight"
+                            ></i>
+                            文章架构
+                        </h2>
+                    </div>
+
+                    <!-- 新的布局：左侧研究框架和创新点上下排列，右侧是系统架构图 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        <!-- 左侧：研究框架和创新点上下排列 -->
+                        <div class="flex flex-col space-y-6">
+                            <!-- 研究框架 -->
+                            <div class="mini-card">
+                                <h3 class="text-2xl font-bold mb-4 highlight">
+                                    研究框架
+                                </h3>
+                                <p class="text-gray-300 mb-4">
+                                    本文构建了一个智能驾驶视觉辅助系统，包含三个核心模块：
+                                </p>
+                                <ul
+                                    class="list-disc list-inside text-gray-300 space-y-2 pl-4"
+                                >
+                                    <li>
+                                        基于传统图像处理与深度学习的<span
+                                            class="highlight"
+                                            >车道线检测</span
+                                        >模块
+                                    </li>
+                                    <li>
+                                        结合YOLOv5与改进DeepSORT的<span
+                                            class="highlight"
+                                            >障碍物检测与跟踪</span
+                                        >模块
+                                    </li>
+                                    <li>
+                                        实时高效的<span class="highlight"
+                                            >碰撞风险评估</span
+                                        >模块
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- 主要创新点 -->
+                            <div class="mini-card">
+                                <h3 class="text-2xl font-bold mb-4 highlight">
+                                    主要创新点
+                                </h3>
+                                <div
+                                    class="grid grid-cols-1 md:grid-cols-2 gap-3"
+                                >
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-1">
+                                            车道识别
+                                        </h4>
+                                        <p class="text-gray-300 text-sm">
+                                            提出图像处理与深度学习融合架构，改进FastSCNN结构优化特征提取模块，
+                                            结合多尺度DoG边缘检测技术，大幅提升复杂场景中的车道识别鲁棒性
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-1">
+                                            障碍检测与跟踪
+                                        </h4>
+                                        <p class="text-gray-300 text-sm">
+                                            设计改进的DeepSORT框架，引入自适应卡尔曼滤波与平滑处理，
+                                            结合模型蒸馏与轻量级特征提取网络，实现高效实时多目标跟踪
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-1">
+                                            风险评估
+                                        </h4>
+                                        <p class="text-gray-300 text-sm">
+                                            提出基于轨迹预测的综合风险评估模型，融合时空特征与驾驶行为分析，
+                                            构建碰撞时间计算与风险等级量化体系，提前预警潜在危险
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold mb-1">
+                                            系统集成
+                                        </h4>
+                                        <p class="text-gray-300 text-sm">
+                                            开发轻量化系统架构，实现多任务并行处理与资源优化分配，
+                                            在嵌入式平台达到实时性能，满足实际道路场景应用需求
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- 右侧：系统架构图 -->
+                        <div
+                            class="gradient-bg p-6 rounded-lg flex flex-col justify-center h-full"
+                        >
+                            <h3 class="text-xl font-bold mb-4 text-center">
+                                系统架构图
+                            </h3>
+                            <div
+                                class="image-container flex-grow flex items-center justify-center"
+                            >
+                                <img
+                                    src="../figures/chapter1/structure.png"
+                                    alt="系统架构图"
+                                    class="w-full h-auto max-h-[500px] object-contain"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 车道规划 - 车道线提取 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i class="fas fa-road text-3xl mr-4 highlight"></i>
+                            车道线提取
+                        </h2>
+                        <span class="chapter-number">3</span>
+                    </div>
+
+                    <p class="text-gray-300 mb-6">
+                        本研究针对车道线检测任务构建了多阶段处理框架，结合传统图像处理，保证车道线检测的准确性与健壮性。
+                    </p>
+                    <!-- 处理流程 -->
+                    <div
+                        class="flex flex-nowrap overflow-x-auto gap-2 mb-4 pb-2"
+                    >
+                        <!-- 车道线提取步骤 - 颜色分割 -->
+                        <div
+                            class="mini-card step-card lane-step-card"
+                            data-step="1"
+                            data-image="../figures/chapter3/1_color_segmentation.png"
+                            data-title="颜色分割"
+                        >
+                            <h3 class="text-xl font-bold mb-2">颜色分割</h3>
+                            <p class="text-sm text-gray-400">
+                                将RGB图像转换为HSV色彩空间，提取车道线区域（主要是黄色和白色）
+                            </p>
+                        </div>
+
+                        <!-- 车道线提取步骤 - 多尺度DoG -->
+                        <div
+                            class="mini-card step-card lane-step-card"
+                            data-step="2"
+                            data-image="../figures/chapter3/2_dog_edge_detection.png"
+                            data-title="多尺度DoG边缘检测"
+                        >
+                            <h3 class="text-xl font-bold mb-2">
+                                多尺度DoG边缘检测
+                            </h3>
+                            <p class="text-sm text-gray-400">
+                                应用不同尺度的高斯差分，捕获不同清晰度的车道线
+                            </p>
+                        </div>
+
+                        <!-- 车道线提取步骤 - 边缘增强 -->
+                        <div
+                            class="mini-card step-card lane-step-card"
+                            data-step="3"
+                            data-image="../figures/chapter3/3_edge_enhancement.png"
+                            data-title="边缘增强"
+                        >
+                            <h3 class="text-xl font-bold mb-2">边缘增强</h3>
+                            <p class="text-sm text-gray-400">
+                                通过形态学处理增强边缘连续性，解决车道线断裂或模糊问题
+                            </p>
+                        </div>
+
+                        <!-- 车道线提取步骤 - 区域限定 -->
+                        <div
+                            class="mini-card step-card lane-step-card"
+                            data-step="4"
+                            data-image="../figures/chapter3/4_roi_masking.png"
+                            data-title="区域限定"
+                        >
+                            <h3 class="text-xl font-bold mb-2">区域限定</h3>
+                            <p class="text-sm text-gray-400">
+                                定义多边形ROI区域，仅保留图像下部可能含车道线区域
+                            </p>
+                        </div>
+
+                        <!-- 车道线提取步骤 - 直线检测 -->
+                        <div
+                            class="mini-card step-card lane-step-card"
+                            data-step="5"
+                            data-image="../figures/chapter3/5_line_detection.png"
+                            data-title="直线检测"
+                        >
+                            <h3 class="text-xl font-bold mb-2">直线检测</h3>
+                            <p class="text-sm text-gray-400">
+                                应用概率霍夫变换检测边缘图中的直线段，根据斜率分为左右
+                            </p>
+                        </div>
+
+                        <!-- 车道线提取步骤 - 车道线拟合 -->
+                        <div
+                            class="mini-card step-card lane-step-card"
+                            data-step="6"
+                            data-image="../figures/chapter3/6_lane_fitting.png"
+                            data-title="车道线拟合"
+                        >
+                            <h3 class="text-xl font-bold mb-2">车道线拟合</h3>
+                            <p class="text-sm text-gray-400">
+                                对分类线段点集应用二次多项式拟合，获得平滑连续车道线表示
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 图片显示区域 -->
+                    <div class="lane-display-area">
+                        <img
+                            id="lane-step-image"
+                            src="../figures/chapter3/1_color_segmentation.png"
+                            alt="颜色分割"
+                        />
+                    </div>
+
+                    <!-- 简要解释 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 highlight">
+                            主要特点
+                        </h3>
+                        <ul
+                            class="list-disc list-inside text-gray-300 space-y-2"
+                        >
+                            <li>
+                                HSV色彩空间对光照变化不敏感，能有效减少背景干扰
+                            </li>
+                            <li>
+                                多尺度DoG策略利用不同尺度信息的互补性，显著提升检测完整性
+                            </li>
+                            <li>
+                                形态学处理增强边缘连续性，解决车道线断裂问题
+                            </li>
+                            <li>
+                                ROI蒙版减少处理区域，提高计算效率并降低误检率
+                            </li>
+                            <li>
+                                二次多项式拟合适合道路曲率变化平缓的特点，避免高阶多项式的过拟合风险
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 车道规划 - FastSCNN推理 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i
+                                class="fas fa-microchip text-3xl mr-4 highlight"
+                            ></i>
+                            FastSCNN推理
+                        </h2>
+                        <span class="chapter-number">3</span>
+                    </div>
+
+                    <p class="text-gray-300 mb-6">
+                        传统图像处理方法易受图像噪点、曝光异常、光照变化和复杂路面纹理等因素影响。为了提高系统在多样环境下的鲁棒性，本研究引入深度学习模型FastSCNN，进行道路场景语义分割，特别适合车载嵌入式系统部署需求。
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <!-- 左侧：数据集和预处理 -->
+                        <div>
+                            <h3 class="text-xl font-bold mb-4 highlight">
+                                数据集与预处理
+                            </h3>
+                            <div class="mini-card mb-4">
+                                <h4 class="text-lg font-bold mb-2">
+                                    KITTI道路数据集
+                                </h4>
+                                <ul
+                                    class="list-disc list-inside text-sm text-gray-400 space-y-1"
+                                >
+                                    <li>
+                                        包含多种驾驶场景下的高质量图像和精确标注
+                                    </li>
+                                    <li>1242×375像素分辨率图像</li>
+                                    <li>约290张训练图像和290张测试图像</li>
+                                    <li>每张图像都有对应的二值掩码标注</li>
+                                </ul>
+                            </div>
+
+                            <div class="mini-card">
+                                <h4 class="text-lg font-bold mb-2">
+                                    数据预处理策略
+                                </h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            尺寸调整
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            统一至320×800分辨率
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            水平翻转
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            60%概率应用，增加样本多样性
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            亮度对比度调整
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            模拟不同光照条件
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            高斯噪声
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            添加随机噪点提高抗噪能力
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：模型架构图 -->
+                        <div class="image-container" style="min-height: 500px; display: flex; align-items: center; justify-content: center;">
+                            <img
+                                src="../figures/chapter3/enfastscnn_arch.png"
+                                alt="改进的FastSCNN网络架构"
+                                style="width: 95%; max-height: 80vh; object-fit: contain;"
+                            />
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+            <div class="slide">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 模型训练 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 highlight">
+                            模型训练
+                        </h3>
+                        <p class="text-gray-300 mb-4">
+                            采用了改进的FastSCNN结构，针对特征提取与融合模块进行了优化，以增强模型的细节保留能力，专门处理道路分割，输出类别为可行驶区域与非可行驶区域两类。
+                        </p>
+                        <ul
+                            class="list-disc list-inside text-sm text-gray-400 space-y-2"
+                        >
+                            <li>
+                                加权交叉熵损失函数（道路类别4:1权重）解决数据不平衡
+                            </li>
+                            <li>
+                                采用AdamW并配合权重衰减(1e-4)控制模型复杂度
+                            </li>
+                            <li>
+                                OneCycleLR学习率调度策略加速收敛并提高稳定性
+                            </li>
+                            <li>混合精度训练和梯度裁剪优化训练过程</li>
+                            <li>
+                                监测验证集性能，保存最佳mIoU模型，防止过拟合
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- 模型评估 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 highlight">
+                            模型评估
+                        </h3>
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="text-center">
+                                <div class="metric-value">92.8%</div>
+                                <div class="metric-unit">验证集mIoU</div>
+                            </div>
+                            <div class="mx-8 text-4xl text-gray-600">|</div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <div class="metric-value">94.3%</div>
+                                    <div class="metric-unit">
+                                        道路区域IoU
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="metric-value">91.3%</div>
+                                    <div class="metric-unit">
+                                        非道路区域IoU
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-400">
+                            相较于在Cityscapes上68.0%的mIoU，本文的训练成果表现优秀。模型表现出良好鲁棒性，能有效识别不同光照条件下的可行驶区域，对复杂路况如路面标记、树影和部分遮挡，也具有较强抗干扰能力。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 训练分析图 -->
+                <div class="mt-8 image-container">
+                    <img
+                        src="../figures/chapter3/fastscnn_training_analysis.png"
+                        alt="FastSCNN模型训练分析"
+                        class="w-full h-auto"
+                    />
+                    <p class="text-center mt-2 text-sm text-gray-400">
+                        FastSCNN模型训练分析图
+                    </p>
+                </div>
+            </div>
+            <!-- 车道规划 - 图像处理与语义分割叠加 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i
+                                class="fas fa-layer-group text-3xl mr-4 highlight"
+                            ></i>
+                            图像处理与语义分割叠加
+                        </h2>
+                        <span class="chapter-number">3</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <div>
+                            <h3 class="text-xl font-bold mb-4 highlight">
+                                融合策略
+                            </h3>
+                            <p class="text-gray-300 mb-4">
+                                融合过程将FastSCNN语义分割与传统车道线检测结果空间对齐，采用基于空间关系的加权策略。根据像素与车道线距离动态调整权重分配，车道线附近优先采用传统方法的精确定位，远离区域则依赖语义分割的全局理解能力。
+                            </p>
+
+                            <div class="mini-card">
+                                <h4 class="text-lg font-bold mb-2">
+                                    各方法优势
+                                </h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-3"
+                                    >
+                                        <h5 class="text-sm font-bold mb-1">
+                                            传统方法优势
+                                        </h5>
+                                        <ul
+                                            class="list-disc list-inside text-xs text-gray-400"
+                                        >
+                                            <li>车道线边界提供精确定位</li>
+                                            <li>处理结构化道路场景效果好</li>
+                                            <li>计算效率高，适合实时系统</li>
+                                        </ul>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-3"
+                                    >
+                                        <h5 class="text-sm font-bold mb-1">
+                                            语义分割优势
+                                        </h5>
+                                        <ul
+                                            class="list-disc list-inside text-xs text-gray-400"
+                                        >
+                                            <li>远处区域提供连贯表示</li>
+                                            <li>光照不均区域表现稳定</li>
+                                            <li>复杂场景更好的泛化能力</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 对比图 -->
+                        <div>
+                            <h3 class="text-xl font-bold mb-4 highlight">
+                                融合效果对比
+                            </h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- 传统方法 -->
+                                <div class="image-container">
+                                    <img
+                                        src="../figures/chapter3/compare_l.png"
+                                        alt="传统方法效果"
+                                        class="w-full h-auto"
+                                    />
+                                    <p
+                                        class="text-center mt-1 text-sm text-gray-400"
+                                    >
+                                        传统图像处理方法
+                                    </p>
+                                </div>
+
+                                <!-- 融合方法 -->
+                                <div class="image-container">
+                                    <img
+                                        src="../figures/chapter3/compare_r.png"
+                                        alt="融合方法效果"
+                                        class="w-full h-auto"
+                                    />
+                                    <p
+                                        class="text-center mt-1 text-sm text-gray-400"
+                                    >
+                                        融合后效果
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 双保险机制 -->
+                    <div class="gradient-bg">
+                        <h3 class="text-xl font-bold mb-4 text-center">
+                            双保险机制
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <p class="text-gray-200">
+                                    本文设计的"双保险"机制确保系统可靠性：当一种方法失效时，另一种方法仍能有效工作。这种互补设计在各种环境下能稳定划定行驶边界，为碰撞评估和轨迹规划提供可靠依据。
+                                </p>
+                            </div>
+                            <div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div
+                                        class="bg-black bg-opacity-20 rounded-lg p-3"
+                                    >
+                                        <h5
+                                            class="text-sm font-bold mb-1 text-center"
+                                        >
+                                            场景1
+                                        </h5>
+                                        <p class="text-xs text-white">
+                                            车道线模糊时语义分割可提供替代输出
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-20 rounded-lg p-3"
+                                    >
+                                        <h5
+                                            class="text-sm font-bold mb-1 text-center"
+                                        >
+                                            场景2
+                                        </h5>
+                                        <p class="text-xs text-white">
+                                            强光或复杂纹理下车道线检测能弥补分割缺陷
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-center text-white">
+                                在处理复杂光照与路面纹理时，融合方法优于单一方法，降低了误识别率，提高识别准确性，实时处理能力也符合对硬件设备的期望。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 监测障碍 - 障碍检测 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i
+                                class="fas fa-object-group text-3xl mr-4 highlight"
+                            ></i>
+                            障碍检测
+                        </h2>
+                        <span class="chapter-number">4</span>
+                    </div>
+
+                    <!-- 检测效果展示 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="image-container">
+                            <img
+                                src="../figures/chapter4/a.jpg"
+                                alt="复杂路况检测效果1"
+                                class="w-full h-auto"
+                            />
+                            <p class="text-center mt-2 text-sm text-gray-400">
+                                城市道路环境检测效果
+                            </p>
+                        </div>
+                        <div class="image-container">
+                            <img
+                                src="../figures/chapter4/b.jpg"
+                                alt="复杂路况检测效果2"
+                                class="w-full h-auto"
+                            />
+                            <p class="text-center mt-2 text-sm text-gray-400">
+                                复杂交通场景检测效果
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <!-- 数据集预处理 -->
+                        <div class="mini-card">
+                            <h3 class="text-xl font-bold mb-3 highlight">
+                                数据集预处理
+                            </h3>
+                            <div class="flex items-center justify-center mb-4">
+                                <div class="text-center">
+                                    <div class="metric-value">5万</div>
+                                    <div class="metric-unit">训练图像</div>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-400 mb-3">
+                                使用BDD100K数据集的一半数据进行模型训练和验证，涵盖不同时间、多样化天气条件和驾驶场景。
+                            </p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        图像筛选与分割
+                                    </p>
+                                    <p class="text-xs text-gray-400">
+                                        划分为训练集和验证集
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        标注格式转换
+                                    </p>
+                                    <p class="text-xs text-gray-400">
+                                        从JSON转为YOLO格式
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        类别映射
+                                    </p>
+                                    <p class="text-xs text-gray-400">
+                                        映射为行人、骑行、汽车等
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        坐标归一化
+                                    </p>
+                                    <p class="text-xs text-gray-400">
+                                        转换为相对值表示
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 模型训练与评估 -->
+                        <div class="mini-card">
+                            <h3 class="text-xl font-bold mb-3 highlight">
+                                模型训练与评估
+                            </h3><br>
+                            <p class="text-sm text-gray-400">
+                                随机裁剪、旋转、缩放、亮度调整等图像增强；<br>余弦退火策略动态调整学习率；<br>批量归一化加速训练并提高稳定性；<br>早停机制防止过拟合和局部最优。
+                            </p><br>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <!-- mAP@0.5 -->
+                                <div class="text-center">
+                                    <div class="metric-value">61%</div>
+                                    <div class="metric-unit">mAP@0.5</div>
+                                    <p class="text-xs text-gray-400">
+                                        模型在验证集上的平均精度
+                                    </p>
+                                </div>
+
+                                <!-- mAP@0.5:0.95 -->
+                                <div class="text-center">
+                                    <div class="metric-value">34%</div>
+                                    <div class="metric-unit">mAP@0.5:0.95</div>
+                                    <p class="text-xs text-gray-400">
+                                        不同IoU阈值下的平均精度
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- 训练性能曲线 -->
+                    <div class="chart-container mb-8">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+
+                    <!-- 评估指标说明 -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="mini-card">
+                            <h4 class="text-md font-bold mb-2">精确率</h4>
+                            <div
+                                class="bg-black bg-opacity-40 rounded-lg p-2 text-center"
+                            >
+                                <p class="text-xs">TP / (TP + FP)</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">
+                                预测为正类中真正为正类的比例
+                            </p>
+                        </div>
+                        <div class="mini-card">
+                            <h4 class="text-md font-bold mb-2">召回率</h4>
+                            <div
+                                class="bg-black bg-opacity-40 rounded-lg p-2 text-center"
+                            >
+                                <p class="text-xs">TP / (TP + FN)</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">
+                                真实正类中被正确预测的比例
+                            </p>
+                        </div>
+                        <div class="mini-card">
+                            <h4 class="text-md font-bold mb-2">F1分数</h4>
+                            <div
+                                class="bg-black bg-opacity-40 rounded-lg p-2 text-center"
+                            >
+                                <p class="text-xs">2·(P·R)/(P+R)</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">
+                                精确率和召回率的调和平均值
+                            </p>
+                        </div>
+                        <div class="mini-card">
+                            <h4 class="text-md font-bold mb-2">平均精度</h4>
+                            <div
+                                class="bg-black bg-opacity-40 rounded-lg p-2 text-center"
+                            >
+                                <p class="text-xs">AP</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">
+                                不同召回率水平下精确率的平均值
+                            </p>
+                        </div>
+                        <div class="mini-card">
+                            <h4 class="text-md font-bold mb-2">交并比</h4>
+                            <div
+                                class="bg-black bg-opacity-40 rounded-lg p-2 text-center"
+                            >
+                                <p class="text-xs">A∩B / A∪B</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">
+                                预测与真实边界框重叠程度
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 监测障碍 - 模型蒸馏及量化 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i class="fas fa-flask text-3xl mr-4 highlight"></i>
+                            模型蒸馏及量化
+                        </h2>
+                        <span class="chapter-number">4</span>
+                    </div>
+
+                    <!-- 蒸馏和量化介绍 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <!-- 模型蒸馏 -->
+                        <div class="mini-card">
+                            <h3 class="text-xl font-bold mb-3 highlight">
+                                模型蒸馏
+                            </h3>
+                            <p class="text-gray-300 mb-4">
+                                模型蒸馏（Model
+                                Distillation）是一种旨在实现模型轻量化与高效推理的知识压缩技术。其核心思想是将一个大型且性能优越的"教师模型"所学习到的知识，迁移到一个结构更为精简的"学生模型"中。
+                            </p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-3"
+                                >
+                                    <h4 class="text-sm font-bold mb-1">
+                                        软标签学习
+                                    </h4>
+                                    <p class="text-xs text-gray-400">
+                                        学生模型不仅学习传统的硬标签，更重要的是，学习教师模型输出的软标签（softmax概率分布），获得类别间关系的深层信息。
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-3"
+                                >
+                                    <h4 class="text-sm font-bold mb-1">
+                                        损失函数
+                                    </h4>
+                                    <p class="text-xs text-gray-400">
+                                        使用交叉熵损失和Kullback-Leibler散度度量学生与教师模型输出差异并指导学习过程。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 模型量化 -->
+                        <div class="mini-card">
+                            <h3 class="text-xl font-bold mb-3 highlight">
+                                模型量化
+                            </h3>
+                            <p class="text-gray-300 mb-4">
+                                模型量化（Model
+                                Quantization）是一种常用的模型压缩与加速技术。它通过将模型参数和计算从高精度（FP32、FP16等）转换为低精度（INT8），可以在推理时有效减少计算资源消耗。
+                            </p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-3"
+                                >
+                                    <h4 class="text-sm font-bold mb-1">
+                                        静态量化
+                                    </h4>
+                                    <p class="text-xs text-gray-400">
+                                        利用校准数据对模型权重和激活进行量化参数的统计和校准，将其统一映射为低精度格式。
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-3"
+                                >
+                                    <h4 class="text-sm font-bold mb-1">
+                                        动态量化
+                                    </h4>
+                                    <p class="text-xs text-gray-400">
+                                        在推理过程中，动态地将部分权重或激活从高精度转换为低精度。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 蒸馏流程 -->
+                    <div class="mb-8">
+                        <div class="mt-4 mini-card">
+                            <h4 class="text-lg font-bold mb-2">蒸馏损失函数</h4>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        边界框损失
+                                    </p>
+                                    <p
+                                        class="text-xs text-gray-400 text-center"
+                                    >
+                                        MSE(S<sub>box</sub>, T<sub>box</sub>)
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        置信度损失
+                                    </p>
+                                    <p
+                                        class="text-xs text-gray-400 text-center"
+                                    >
+                                        KL(Softmax(T<sub>conf</sub>/T) ||
+                                        Softmax(S<sub>conf</sub>/T))
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-black bg-opacity-40 rounded-lg p-2"
+                                >
+                                    <p
+                                        class="text-xs text-center font-bold mb-1"
+                                    >
+                                        分类损失
+                                    </p>
+                                    <p
+                                        class="text-xs text-gray-400 text-center"
+                                    >
+                                        KL(Softmax(T<sub>cls</sub>/T) ||
+                                        Softmax(S<sub>cls</sub>/T))
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                KL 散度是用来描述两个分布之间的信息损失<br>
+                                    本文使用这种方式用来指导学生模型向KL降低方向调整，从而能得到较低的Loss
+
+                            </div>
+                            <div
+                                class="mt-3 bg-black bg-opacity-40 rounded-lg p-2"
+                            >
+                                <p class="text-sm text-center">
+                                    最终损失 = L<sub>det</sub> + λ<sub>KD</sub>
+                                    · (L<sub>box</sub> + L<sub>conf</sub> +
+                                    L<sub>cls</sub>)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide">
+                <h3 class="text-xl font-bold mb-4 highlight">知识蒸馏流程</h3>
+                <div class="image-container">
+                    <img
+                        src="../figures/chapter4/distill.png"
+                        alt="知识蒸馏流程"
+                        class="w-full h-auto"
+                    />
+                </div>
+                <!-- 模型性能对比 -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4 highlight">
+                        性能对比结果
+                    </h3>
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    >
+                        <!-- 精度对比 -->
+                        <div class="mini-card">
+                            <div class="metric-value">97.6%</div>
+                            <h4 class="text-lg font-bold mb-1">
+                                教师模型精度
+                            </h4>
+                            <p class="text-sm text-gray-400">
+                                蒸馏后轻量化模型达到教师模型的mIoU精度
+                            </p>
+                            <div
+                                class="chart-container mt-3"
+                                style="height: 150px"
+                            >
+                                <canvas id="accuracyComparisonChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 速度提升 -->
+                        <div class="mini-card">
+                            <div class="metric-value">171%</div>
+                            <h4 class="text-lg font-bold mb-1">推理速度提升</h4>
+                            <p class="text-sm text-gray-400">
+                                蒸馏后模型相较于原始教师模型的速度提升
+                            </p>
+                            <div
+                                class="chart-container mt-3"
+                                style="height: 150px"
+                            >
+                                <canvas id="speedComparisonChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 模型规模对比 -->
+                        <div class="mini-card">
+                            <div class="metric-value">26.4%</div>
+                            <h4 class="text-lg font-bold mb-1">参数量比例</h4>
+                            <p class="text-sm text-gray-400">
+                                YOLOv5n相比YOLOv5s的参数量比例
+                            </p>
+                            <table class="data-table text-xs mt-3">
+                                <thead>
+                                    <tr>
+                                        <th>模型</th>
+                                        <th>参数量</th>
+                                        <th>计算量</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>YOLOv5n</td>
+                                        <td>1.9M</td>
+                                        <td>4.5 GFLOPs</td>
+                                    </tr>
+                                    <tr>
+                                        <td>YOLOv5s</td>
+                                        <td>7.2M</td>
+                                        <td>16.5 GFLOPs</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 综合性能图 -->
+                    <div class="mt-6 chart-container">
+                        <canvas id="performanceComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 监测障碍 - 障碍跟踪 -->
+            <div class="slide">
+                <div class="main-card">
+                    <div class="relative">
+                        <h2 class="section-title">
+                            <i class="fas fa-route text-3xl mr-4 highlight"></i>
+                            障碍跟踪
+                        </h2>
+                        <span class="chapter-number">4</span>
+                    </div>
+
+                    <!-- DeepSORT框架介绍 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <!-- 左侧：改进的DeepSORT框架 -->
+                        <div>
+                            <h3 class="text-xl font-bold mb-4 highlight">
+                                改进的DeepSORT框架
+                            </h3>
+                            <p class="text-gray-300 mb-4">
+                                DeepSORT将目标的外观特征与运动状态信息融合，构建多元相似度度量机制。在计算关联代价时，同时考虑外观相似性和运动连续性。
+                            </p>
+                            <div class="mini-card">
+                                <h4 class="text-lg font-bold mb-2">核心组件</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            检测关联模块
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            将当前检测结果与已有轨迹关联，使用加权马氏距离和外观特征距离
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            卡尔曼滤波模块
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            通过预测和更新两阶段，估计目标运动状态
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            轨迹管理模块
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            维护暂存、确认和删除三种轨迹状态
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-black bg-opacity-40 rounded-lg p-2"
+                                    >
+                                        <p
+                                            class="text-xs text-center font-bold mb-1"
+                                        >
+                                            匹配算法模块
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            使用匈牙利算法求解全局最优分配方案
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：DeepSORT框架图 -->
+                        <div class="image-container">
+                            <img
+                                src="../figures/chapter4/deepsort_standalone.png"
+                                alt="DeepSORT跟踪框架"
+                                class="w-full h-auto"
+                            />
+                            <p class="text-center mt-2 text-sm text-gray-400">
+                                DeepSORT跟踪框架
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide">
+                <!-- 改进内容 -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-8">
+                    <!-- 左侧列：卡尔曼滤波器和轻量级特征度量 -->
+                    <div class="md:col-span-4 flex flex-col gap-4">
+                        <!-- 卡尔曼滤波器 -->
+                        <div class="mini-card">
+                            <h3 class="text-xl font-bold mb-3 highlight">
+                                卡尔曼滤波器
+                            </h3>
+                            <p class="text-sm text-gray-400 mb-3">
+                                实现了针对车载环境优化的线性卡尔曼滤波器，使用8维状态向量表示目标位置和运动状态。
+                            </p>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    状态向量
+                                </p>
+                                <p class="text-xs text-center">
+                                    x =
+                                    [x,y,w,h,v<sub>x</sub>,v<sub>y</sub>,v<sub>w</sub>,v<sub>h</sub>]<sup
+                                        >T</sup
+                                    >
+                                </p>
+                            </div>
+                            <div class="mt-3 bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    自适应噪声调整
+                                </p>
+                                <p class="text-xs text-center">
+                                    Q(v) = Q<sub>0</sub> · (1 + α·‖v‖)
+                                </p>
+                                <p class="text-xs text-center text-gray-400 mt-1">
+                                    根据车速动态调整过程噪声
+                                </p>
+                            </div>
+                            <div class="mt-3 bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    更新机制和平滑处理
+                                </p>
+                                <p class="text-xs text-center">
+                                    x̂<sub>t</sub> = α·z<sub>t</sub> + (1-α)·x̂<sub>t-1</sub>
+                                </p>
+                                <p class="text-xs text-center text-gray-400 mt-1">
+                                    采用指数移动平均滤波器平滑跟踪结果
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 特征度量 -->
+                        <div class="mini-card">
+                            <h3 class="text-xl font-bold mb-3 highlight">
+                                轻量级特征度量
+                            </h3>
+                            <p class="text-sm text-gray-400 mb-3">
+                                考虑到嵌入式设备资源限制，对传统DeepSORT特征度量方法进行了简化和优化，主要使用IoU作为目标关联度量标准。
+                            </p>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2 mb-3">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    IoU计算
+                                </p>
+                                <p class="text-xs text-center">
+                                    IoU(A,B) = Area(A∩B) / Area(A∪B)
+                                </p>
+                            </div>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    关联度量函数
+                                </p>
+                                <p class="text-xs text-center">
+                                    d<sub>IoU</sub>(i,j) = 1 - IoU(i,j)
+                                </p>
+                                <p class="text-xs text-center text-gray-400 mt-1">
+                                    当d<sub>IoU</sub>(i,j) ≤
+                                    t<sub>IoU</sub>时认为有关联可能性
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧列：级联匹配策略 -->
+                    <div class="md:col-span-8 mini-card h-full flex flex-col">
+                        <h3 class="text-xl font-bold mb-2 highlight">
+                            级联匹配策略
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-2">
+                            采用贪心匹配策略替代标准匈牙利算法，并实现基于轨迹质量的级联匹配策略。
+                        </p>
+                        <!-- 自定义样式覆盖原有的image-container样式 -->
+                        <div class="flex-grow flex items-center justify-center" style="min-height: 80vh;">
+                            <img
+                                src="../figures/chapter4/fit.png"
+                                alt="贪心匹配策略"
+                                style="width: 100%; height: auto; max-height: 85vh; object-fit: contain;"
+                            />
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <!-- 碰撞预测 - 基本模型 -->
+        <div class="slide">
+            <div class="main-card">
+                <div class="relative">
+                    <h2 class="section-title">
+                        <i class="fas fa-car-crash text-3xl mr-4 highlight"></i>
+                        碰撞预测
+                    </h2>
+                    <span class="chapter-number">5</span>
+                </div>
+
+                <!-- 三个子模块卡片组 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- 运动轨迹预测算法 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 highlight">
+                            运动轨迹预测算法
+                        </h3>
+                        <div class="flex justify-center items-center mb-4">
+                            <i
+                                class="fas fa-vector-square text-4xl highlight"
+                            ></i>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-4">
+                            基于目标当前和历史状态，推断其未来可能的位置。线性预测模型简洁而高效，部署性能良好。
+                        </p>
+                        <div class="bg-black bg-opacity-40 rounded-lg p-3">
+                            <p class="text-xs text-center mb-2">线性预测模型</p>
+                            <p class="text-xs text-center">
+                                [x<sub>t+1</sub>, y<sub>t+1</sub>] =
+                                [x<sub>t</sub>, y<sub>t</sub>] + [v<sub>x</sub>,
+                                v<sub>y</sub>]·Δt
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 碰撞时间计算模型 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 highlight">
+                            碰撞时间计算模型
+                        </h3>
+                        <div class="flex justify-center items-center mb-4">
+                            <i class="fas fa-clock text-4xl highlight"></i>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-4">
+                            碰撞时间(TTC)是评估风险紧迫性的核心指标，表示在当前运动状态下，两个物体发生碰撞所需的时间。
+                        </p>
+                        <div class="bg-black bg-opacity-40 rounded-lg p-3 mb-3">
+                            <p class="text-md text-center mb-1">
+                                TTC = d/|v<sub>rel</sub>|
+                            </p>
+                            <p class="text-xs text-center text-gray-400">
+                                d是两物体间的距离，v<sub>rel</sub>是相对速度
+                            </p>
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            TTC阈值通常设置在1.5秒到5秒之间。低于1.5秒被认为是危险状态，需要立即采取措施；而高于5秒则被视为安全状态。
+                        </p>
+                    </div>
+
+                    <!-- 综合风险评估模型 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 highlight">
+                            综合风险评估模型
+                        </h3>
+                        <div class="flex justify-center items-center mb-4">
+                            <i class="fas fa-chart-bar text-4xl highlight"></i>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-4">
+                            碰撞风险评估不仅考虑时间距离，还综合分析空间关系、相对运动状态和环境条件等多种因素。
+                        </p>
+                        <div class="grid grid-cols-1 gap-2">
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    时空风险因子
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    基于TTC值划分风险等级，采用分段函数形式
+                                </p>
+                            </div>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    道路边界风险
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    评估物体是否可能偏离道路，使用三级区域划分
+                                </p>
+                            </div>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    相对运动状态风险
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    考虑物体间的相对速度、加速度和接近角度
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 风险评估区域 - 分段函数和分级预警左右布局 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- 左侧：风险评估分段函数 -->
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 highlight">
+                            风险评估分段函数
+                        </h3>
+                        <div
+                            class="gradient-bg p-6 h-full flex flex-col justify-center"
+                        >
+                            <div class="text-center mb-4">
+                                <p class="text-lg font-semibold">
+                                    风险分值计算
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <p class="mb-4">
+                                    Risk<sub>1</sub> = { 1, 若TTC < T<sub
+                                        >critical</sub
+                                    ><br />
+                                    e<sup>-λ(TTC - T<sub>critical</sub>)</sup>,
+                                    若T<sub>critical</sub> ≤ TTC < T<sub
+                                        >warning</sub
+                                    ><br />
+                                    0, 若TTC ≥ T<sub>warning</sub>
+                                    }
+                                </p>
+                                <p class="text-md mb-2">最终风险评分</p>
+                                <p>
+                                    Risk<sub>total</sub> = ∑<sub>k</sub>w<sub
+                                        >k</sub
+                                    >
+                                    · Risk<sub>k</sub>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：分级预警机制 -->
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 highlight">
+                            分级预警机制
+                        </h3>
+                        <div class="flex flex-col space-y-4">
+                            <!-- 强预警 -->
+                            <div
+                                class="mini-card"
+                                style="border: 2px solid #ff4136"
+                            >
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 mr-4">
+                                        <i
+                                            class="fas fa-exclamation-triangle text-4xl"
+                                            style="color: #ff4136"
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <div
+                                            class="text-xl font-bold"
+                                            style="color: #ff4136"
+                                        >
+                                            强预警 (Risk > 0.8)
+                                        </div>
+                                        <p class="text-sm text-gray-400 mt-1">
+                                            紧急危险情况，需要立即采取措施避免碰撞
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 弱预警 -->
+                            <div
+                                class="mini-card"
+                                style="border: 2px solid #ffdc00"
+                            >
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 mr-4">
+                                        <i
+                                            class="fas fa-exclamation text-4xl"
+                                            style="color: #ffdc00"
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <div
+                                            class="text-xl font-bold"
+                                            style="color: #ffdc00"
+                                        >
+                                            弱预警 (0.4 ≤ Risk ≤ 0.8)
+                                        </div>
+                                        <p class="text-sm text-gray-400 mt-1">
+                                            潜在风险情况，应保持警惕并准备采取措施
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 正常 -->
+                            <div
+                                class="mini-card"
+                                style="border: 2px solid #2ecc40"
+                            >
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 mr-4">
+                                        <i
+                                            class="fas fa-check-circle text-4xl"
+                                            style="color: #2ecc40"
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <div
+                                            class="text-xl font-bold"
+                                            style="color: #2ecc40"
+                                        >
+                                            正常 (Risk < 0.4)
+                                        </div>
+                                        <p class="text-sm text-gray-400 mt-1">
+                                            安全状态，正常驾驶无需特别关注
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 碰撞预测 - 效果展示 -->
+        <div class="slide">
+            <div class="main-card">
+                <div class="relative">
+                    <h2 class="section-title">
+                        <i class="fas fa-eye text-3xl mr-4 highlight"></i>
+                        碰撞预测效果
+                    </h2>
+                    <span class="chapter-number">5</span>
+                </div>
+
+                <!-- 预测效果展示 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- 第9帧 -->
+                    <div class="mini-card">
+                        <h3 class="text-xl font-bold mb-3 text-center">
+                            第9帧预测结果
+                        </h3>
+                        <div class="image-container">
+                            <img
+                                src="../figures/chapter5/ttc1.jpg"
+                                alt="第9帧预测结果"
+                                class="w-full h-auto"
+                            />
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-center">
+                            第80帧预测结果
+                        </h3>
+                        <div class="image-container">
+                            <img
+                                src="../figures/chapter5/ttc2.jpg"
+                                alt="第80帧预测结果"
+                                class="w-full h-auto"
+                            />
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-3">
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    检测到车辆
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    识别前方车辆位置和速度
+                                </p>
+                            </div>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    风险评估
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    计算碰撞风险概率为低风险
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第80帧 -->
+                    <div class="mini-card">
+
+                        <h3 class="text-xl font-bold mb-3 text-center">
+                            第95帧预测结果
+                        </h3>
+                        <div class="image-container">
+                        <img
+                            src="../figures/chapter4/track1.jpg"
+                            alt="第95帧预测结果"
+                            class="w-full h-auto"
+                        /></div>
+                        <h3 class="text-xl font-bold mb-3 text-center">
+                            第300帧预测结果
+                        </h3><div class="image-container">
+                        <img
+                            src="../figures/chapter4/track2.jpg"
+                            alt="第300帧预测结果"
+                            class="w-full h-auto"
+                        />
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-3">
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    多目标检测
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    识别多个车辆及其运动状态
+                                </p>
+                            </div>
+                            <div class="bg-black bg-opacity-40 rounded-lg p-2">
+                                <p class="text-xs text-center font-bold mb-1">
+                                    轨迹预测
+                                </p>
+                                <p class="text-xs text-center text-gray-400">
+                                    预测未来位置，计算碰撞概率
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- 谢谢聆听页面 -->
+        <div class="slide">
+            <div class="main-card flex flex-col justify-center items-center h-full text-center">
+                <h1 class="mega-number" style="font-size: 5rem; margin-bottom: 1rem;">感&nbsp;谢&nbsp;聆&nbsp;听</h1>
+                <p class="text-4xl font-bold text-white mb-8">Thanks</p>
+                <div class="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded mb-12"></div>
+            </div>
+        </div>
+
+        <script>
+            // 当前幻灯片索引
+            let currentSlide = 1;
+            // 总幻灯片数量
+            const totalSlides = document.querySelectorAll(".slide").length;
+
+            // 初始化幻灯片显示
+            function initializeSlides() {
+                const slides = document.querySelectorAll(".slide");
+                slides.forEach((slide, index) => {
+                    // 设置data-slide属性为顺序编号（从1开始）
+                    slide.setAttribute("data-slide", index + 1);
+
+                    // 隐藏所有幻灯片
+                    slide.style.opacity = "0";
+                    slide.style.zIndex = "-1";
+                });
+
+                // 显示第一张幻灯片
+                if (slides.length > 0) {
+                    slides[0].style.opacity = "1";
+                    slides[0].style.zIndex = "1";
+                }
+
+                // 初始化车道线提取步骤卡片（如果在第一个幻灯片）
+                if (slides[0].querySelector(".lane-step-card")) {
+                    setupLaneStepCards();
+                }
+            }
+
+            // 直接跳转到指定页
+            function goToSlideNumber(slideNumber) {
+                if (slideNumber < 1 || slideNumber > totalSlides) return;
+
+                // 隐藏当前幻灯片
+                const currentSlideElement = document.querySelector(
+                    `.slide[data-slide="${currentSlide}"]`,
+                );
+                if (currentSlideElement) {
+                    currentSlideElement.style.opacity = "0";
+                    currentSlideElement.style.zIndex = "-1";
+                }
+
+                // 设置新幻灯片索引
+                currentSlide = slideNumber;
+
+                // 显示新幻灯片
+                setTimeout(() => {
+                    const newSlideElement = document.querySelector(
+                        `.slide[data-slide="${currentSlide}"]`,
+                    );
+                    if (newSlideElement) {
+                        newSlideElement.style.opacity = "1";
+                        newSlideElement.style.zIndex = "1";
+                        // 滚动到顶部
+                        newSlideElement.scrollTop = 0;
+
+                        // 检查并初始化车道线提取步骤卡片
+                        if (newSlideElement.querySelector(".lane-step-card")) {
+                            setupLaneStepCards();
+                        }
+                    }
+                }, 300);
+            }
+
+            // 切换幻灯片
+            function goToSlide(direction) {
+                // 隐藏当前幻灯片
+                const currentSlideElement = document.querySelector(
+                    `.slide[data-slide="${currentSlide}"]`,
+                );
+                if (currentSlideElement) {
+                    currentSlideElement.style.opacity = "0";
+                    currentSlideElement.style.zIndex = "-1";
+                }
+
+                // 计算新的幻灯片索引
+                if (direction === "next") {
+                    currentSlide =
+                        currentSlide < totalSlides ? currentSlide + 1 : 1;
+                } else {
+                    currentSlide =
+                        currentSlide > 1 ? currentSlide - 1 : totalSlides;
+                }
+
+                // 显示新的幻灯片
+                setTimeout(() => {
+                    const newSlideElement = document.querySelector(
+                        `.slide[data-slide="${currentSlide}"]`,
+                    );
+                    if (newSlideElement) {
+                        newSlideElement.style.opacity = "1";
+                        newSlideElement.style.zIndex = "1";
+                        // 滚动到顶部
+                        newSlideElement.scrollTop = 0;
+
+                        // 检查并初始化车道线提取步骤卡片
+                        if (newSlideElement.querySelector(".lane-step-card")) {
+                            setupLaneStepCards();
+                        }
+                    }
+                }, 300);
+            }
+
+            // 初始化图表函数
+            function initCharts() {
+                // 这里放图表初始化代码
+                // ...
+            }
+
+            // 车道线提取步骤卡片点击效果
+            function setupLaneStepCards() {
+                const laneStepCards =
+                    document.querySelectorAll(".lane-step-card");
+                const laneStepImage =
+                    document.getElementById("lane-step-image");
+
+                if (!laneStepImage) return; // 如果找不到图片显示区域则退出
+
+                // 默认激活第一个
+                if (laneStepCards.length > 0) {
+                    laneStepCards[0].classList.add("active");
+
+                    // 确保默认图片正确设置
+                    const defaultImageSrc =
+                        laneStepCards[0].getAttribute("data-image");
+                    const defaultTitle =
+                        laneStepCards[0].getAttribute("data-title");
+                    if (defaultImageSrc) {
+                        laneStepImage.src = defaultImageSrc;
+                        laneStepImage.alt = defaultTitle || "步骤图片";
+                    }
+                }
+
+                // 移除现有的事件监听器（防止重复绑定）
+                laneStepCards.forEach((card) => {
+                    card.removeEventListener("click", cardClickHandler);
+                    card.addEventListener("click", cardClickHandler);
+                });
+
+                // 卡片点击处理函数
+                function cardClickHandler() {
+                    // 移除所有卡片的活跃状态
+                    laneStepCards.forEach((c) => c.classList.remove("active"));
+
+                    // 添加当前卡片的活跃状态
+                    this.classList.add("active");
+
+                    // 更新图片
+                    const imageSrc = this.getAttribute("data-image");
+                    const imageTitle = this.getAttribute("data-title");
+                    if (imageSrc && laneStepImage) {
+                        laneStepImage.src = imageSrc;
+                        laneStepImage.alt = imageTitle || "步骤图片";
+                    }
+                }
+            }
+
+            // 使用事件委托作为备份方案
+            document.addEventListener("click", function (event) {
+                const card = event.target.closest(".lane-step-card");
+                if (card) {
+                    const laneStepImage =
+                        document.getElementById("lane-step-image");
+                    if (!laneStepImage) return;
+
+                    const allCards =
+                        document.querySelectorAll(".lane-step-card");
+                    // 移除所有卡片的活跃状态
+                    allCards.forEach((c) => c.classList.remove("active"));
+
+                    // 添加当前卡片的活跃状态
+                    card.classList.add("active");
+
+                    // 更新图片
+                    const imageSrc = card.getAttribute("data-image");
+                    const imageTitle = card.getAttribute("data-title");
+
+                    if (imageSrc) {
+                        laneStepImage.src = imageSrc;
+                        laneStepImage.alt = imageTitle || "步骤图片";
+                    }
+                }
+            });
+
+            // 监听键盘事件
+            document.addEventListener("keydown", (e) => {
+                if (
+                    e.key === "ArrowRight" ||
+                    e.key === " " ||
+                    e.key === "Enter"
+                ) {
+                    goToSlide("next");
+                } else if (e.key === "ArrowLeft") {
+                    goToSlide("prev");
+                }
+            });
+
+            // 防止滚动事件干扰幻灯片切换
+            document.querySelectorAll(".slide").forEach((slide) => {
+                slide.addEventListener(
+                    "wheel",
+                    (e) => {
+                        // 只有当滚动到底部或顶部时才阻止事件冒泡
+                        const isAtBottom =
+                            slide.scrollHeight - slide.scrollTop <=
+                            slide.clientHeight + 10;
+                        const isAtTop = slide.scrollTop <= 10;
+
+                        if (
+                            (e.deltaY > 0 && isAtBottom) ||
+                            (e.deltaY < 0 && isAtTop)
+                        ) {
+                            e.preventDefault();
+                        }
+                    },
+                    { passive: false },
+                );
+            });
+
+            // 文档加载完成后初始化所有功能
+            document.addEventListener("DOMContentLoaded", () => {
+                initializeSlides();
+                initCharts();
+            });
+        </script>
+    </body>
+</html>

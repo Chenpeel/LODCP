@@ -1,0 +1,31 @@
+\documentclass[tikz, border=10pt]{standalone}
+\usepackage{ctex} % 支持中文
+\usepackage{tikz}
+\usepackage{amsmath} % 提供 \text 命令
+\usetikzlibrary{matrix,shapes,arrows,positioning,decorations.pathreplacing,fit,backgrounds,calc,shapes.geometric,arrows.meta}
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.8cm,
+    every node/.style={rounded corners, draw, align=center, minimum width=1.8cm, minimum height=0.7cm, font=\small},
+    >=latex'
+]
+    % Nodes
+    \node (input) {输入图像 $x$};
+    \node (teacher) [above right=of input] {教师模型 $T$};
+    \node (student) [below right=of input] {学生模型 $S$};
+    \node (t_out) [right=of teacher] {教师输出 $T(x)$};
+    \node (s_out) [right=of student] {学生输出 $S(x)$};
+    \node (loss) [right=1cm of $(t_out)!0.5!(s_out)$, minimum width=2.8cm] {损失计算\\$L = L_{\text{det}} + \lambda_{\text{KD}} L_{\text{KD}}$};
+    \node (opt) [below=2cm of loss] {反向传播优化};
+
+    % Arrows
+    \draw[->] (input) -- (teacher);
+    \draw[->] (input) -- (student);
+    \draw[->] (teacher) -- (t_out);
+    \draw[->] (student) -- (s_out);
+    \draw[->] (t_out) -- (loss);
+    \draw[->] (s_out) -- (loss);
+    \draw[->] (loss) -- (opt);
+\end{tikzpicture}
+\end{document}

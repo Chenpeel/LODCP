@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
-from main_py.lane_area_detect import lane_area_detect
-from main_py.ttc import ttc_predict
-from main_py.fast_scnn import FastSCNN
+from lane_area_detect import lane_area_detect
+from ttc import ttc_predict
+from fast_scnn import FastSCNN
 from collections import deque, defaultdict
 
 # 初始化模型
@@ -12,7 +12,7 @@ yolo = YOLO("models/best.pt")
 deepsort = DeepSort(max_age=30)
 fast_scnn = FastSCNN("models/best.pth")
 
-video = cv2.VideoCapture("/resource/input7.mp4")
+video = cv2.VideoCapture("resource/input7.mp4")
 w, h = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(
     video.get(cv2.CAP_PROP_FRAME_HEIGHT)
 )

@@ -1,0 +1,108 @@
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{ctex}  % 支持中文
+\usepackage{geometry}
+
+\geometry{a4paper, margin=1in}
+
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, backgrounds, calc, shadows, chains, decorations.pathreplacing, matrix, shapes.symbols}
+
+\begin{document}
+
+
+\vspace{1cm}
+
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={
+        rectangle,
+        draw=black,
+        thick,
+        fill=blue!10,
+        text width=5cm,
+        text centered,
+        rounded corners,
+        minimum height=1cm,
+        drop shadow
+    },
+    smallbox/.style={
+        rectangle,
+        draw=black,
+        thick,
+        fill=blue!10,
+        text width=3.8cm,
+        text centered,
+        rounded corners,
+        minimum height=1.2cm,
+        drop shadow
+    },
+    line/.style={
+        draw,
+        thick,
+        -latex'
+    },
+    title/.style={
+        font=\large\bfseries
+    }
+]
+
+% 标题
+\node[title] at (0, 0) (title2) {级联匹配策略};
+
+% 级联匹配流程
+\node[box, fill=green!10] at (0, -2) (classify) {根据轨迹质量进行分类:\\1. $\mathcal{T}_{high}$ - 高质量\\2. $\mathcal{T}_{medium}$ - 中等质量\\3. $\mathcal{T}_{low}$ - 低质量和新初始化轨迹};
+
+% 级联处理
+\node[box, below=of classify] (cascade) {逐级执行贪心匹配:\\按高质量→中等质量→低质量顺序处理\\确保稳定轨迹获得优先匹配权};
+
+% 高质量轨迹匹配
+\node[smallbox, fill=green!20, below=of cascade, xshift=-5cm] (high) {一\\匹配高质量轨迹\\确保稳定跟踪的目标\\先获得关联机会};
+
+% 中等质量轨迹匹配
+\node[smallbox, fill=yellow!20, below=of cascade] (medium) {二\\匹配中等质量轨迹\\处理暂时稳定的目标};
+
+% 低质量轨迹匹配
+\node[smallbox, fill=orange!20, below=of cascade, xshift=5cm] (low) {三\\匹配低质量轨迹\\处理新初始化或\\不稳定的目标跟踪};
+
+% 动态阈值调整
+\node[box, fill=blue!20, below=5.5cm of cascade] (dynamic) {动态阈值调整机制:\\$\tau_{IoU}(v,a) = \tau_0 \cdot e^{-\beta \cdot \|v\| \cdot a}$\\$\tau_0$: 基础阈值（0.7）\\$v$: 估计速度\\$a$: 目标面积\\$\beta$: 调整系数};
+
+
+% 连接线
+\draw [line] (classify) -- (cascade);
+\draw [line] (cascade) -- (high);
+\draw [line] (cascade) -- (medium);
+\draw [line] (cascade) -- (low);
+
+\draw [line] (high) |- ($(high.south)+(0,-1)$) -| (dynamic);
+\draw [line] (medium) |- ($(medium.south)+(0,-0.5)$) -| (dynamic);
+\draw [line] (low) |- ($(low.south)+(0,-1)$) -| (dynamic);
+
+% 轨迹-检测匹配示意图
+\begin{scope}[xshift=0cm, yshift=-18cm]
+    \node[title] (title5) {轨迹-检测匹配示意图};
+
+    % 轨迹
+    \node[circle, draw, fill=green!20, minimum size=0.5cm] at (-2, -1.5) (T1) {$T_1$高};
+    \node[circle, draw, fill=yellow!20, minimum size=0.5cm] at (-2, -3) (T2) {$T_2$中};
+    \node[circle, draw, fill=orange!20, minimum size=0.5cm] at (-2, -4.5) (T3) {$T_3$低};
+
+    % 检测
+    \node[circle, draw, fill=blue!20, minimum size=0.5cm] at (2, -1.5) (D1) {$D_1$};
+    \node[circle, draw, fill=blue!20, minimum size=0.5cm] at (2, -3) (D2) {$D_2$};
+    \node[circle, draw, fill=blue!20, minimum size=0.5cm] at (2, -4.5) (D3) {$D_3$};
+
+    % 连线
+    \draw[thick, ->, green!50!black] (T1) -- node[above, sloped, font=\small] {先匹配} (D1);
+    \draw[thick, ->, orange!50!black] (T2) -- node[above, sloped, font=\small] {次匹配} (D2);
+
+    % 动态阈值
+    \draw[thick, ->, dashed, red!50!black] (T3) -- node[above, sloped, font=\small] {$\tau_{动态}$} (D3);
+\end{scope}
+
+\end{tikzpicture}
+
+\end{document}

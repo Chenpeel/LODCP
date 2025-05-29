@@ -13,13 +13,20 @@
 \usepackage{amsthm}
 \usepackage{mathtools}
 \usepackage{unicode-math}
-% \usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false]{biblatex}
-\usepackage[backend=biber,style=gb7714-2015,gbnamefmt=lowercase,gbpub=false,url=true]{biblatex}
+% \usepackage[
+%   backend=biber,
+%   style=numeric,     % 确保使用数字样式
+%   sorting=none,      % 按引用顺序排序
+%   citestyle=numeric, % 明确设置引用样式为数字
+%   bibstyle=numeric   % 明确设置参考文献样式为数字
+% ]{biblatex}
+\usepackage[numbers,super,sort&compress,square]{natbib}
 \usepackage[top=2.8cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
 \usepackage{caption}
 \usepackage{fancyhdr}
 \usepackage{enumitem}
 \usepackage{pifont}
+% \usepackage{xeCJK}
 \usepackage{tikz}
 \usepackage{float}
 \usepackage{algorithm2e}
@@ -33,11 +40,16 @@
 % 设置行距
 \linespread{1.67} % 20磅固定行距
 \setlength{\baselineskip}{20pt} % 确保20磅的行距
-\AtBeginDocument{\normalsize}
+\setlength{\jot}{0.5\baselineskip} % 设置多行公式的行距为1.5倍
+\AtBeginDocument{%
+  \normalsize
+  \everydisplay{\abovedisplayskip=12pt\belowdisplayskip=12pt}%
+}
+
 % 设置字体
 \setmainfont{Times New Roman}
-\setCJKmainfont[BoldFont="STHeiti"]{STSong} % 宋体
-
+\setCJKmainfont[BoldFont={Heiti SC}]{Songti SC} % Mac系统宋体和黑体
+\newfontfamily\zhfont{Heiti SC}
 % 设置章节标题格式
 \CTEXsetup[format={\centering\Large\bfseries}]{section}  % 小三号约为15pt
 \CTEXsetup[format={\bfseries}]{subsection} % 同正文大小，黑体
@@ -67,11 +79,12 @@
     \setlength{\listparindent}{2em}%
   \else
     % 嵌套列表
-    \setlength{\parindent}{0em}%
-    \setlength{\itemindent}{0em}%
+    \setlength{\parindent}{2em}%
+    \setlength{\itemindent}{2em}%
     \setlength{\listparindent}{2em}%
   \fi
 }
+
 
 % 圆括号列表
 \newlist{parlist}{enumerate}{3}
@@ -85,16 +98,16 @@
 }
 \setlist[parlist,2]{
   label=(\alph*),
-  leftmargin=2.5em,
-  labelindent=0em,
+  leftmargin=4.5em,  % 增加左边距
+  labelindent=2em,   % 设置标签缩进
   labelsep=0.5em,
   stdformat,
   font={\normalfont\setuplistindent{2}}
 }
 \setlist[parlist,3]{
   label=(\roman*),
-  leftmargin=2.5em,
-  labelindent=0em,
+  leftmargin=6.5em,  % 进一步增加左边距
+  labelindent=2em,   % 设置标签缩进
   labelsep=0.5em,
   stdformat,
   font={\normalfont\setuplistindent{3}}
@@ -112,16 +125,16 @@
 }
 \setlist[circledlist,2]{
   label={\protect\textcircled{\scriptsize\alph*}},
-  leftmargin=2.5em,
-  labelindent=0em,
+  leftmargin=4.5em,  % 增加左边距
+  labelindent=2em,   % 设置标签缩进
   labelsep=0.5em,
   stdformat,
   font={\normalfont\setuplistindent{2}}
 }
 \setlist[circledlist,3]{
   label={\protect\textcircled{\scriptsize\roman*}},
-  leftmargin=2.5em,
-  labelindent=0em,
+  leftmargin=6.5em,  % 进一步增加左边距
+  labelindent=2em,   % 设置标签缩进
   labelsep=0.5em,
   stdformat,
   font={\normalfont\setuplistindent{3}}
@@ -139,16 +152,16 @@
 }
 \setlist[halfparlist,2]{
   label=\alph*),
-  leftmargin=2.5em,
-  labelindent=0em,
+  leftmargin=4.5em,  % 增加左边距
+  labelindent=2em,   % 设置标签缩进
   labelsep=0.5em,
   stdformat,
   font={\normalfont\setuplistindent{2}}
 }
 \setlist[halfparlist,3]{
   label=\roman*),
-  leftmargin=2.5em,
-  labelindent=0em,
+  leftmargin=6.5em,  % 进一步增加左边距
+  labelindent=2em,   % 设置标签缩进
   labelsep=0.5em,
   stdformat,
   font={\normalfont\setuplistindent{3}}
@@ -156,14 +169,18 @@
 
 
 
-% 设置图表标题格式
-\captionsetup[figure]{font={small,bf}, labelsep=space} % 五号约为10.5pt
-\captionsetup[table]{font={small,bf}, labelsep=space} % 五号约为10.5pt
+
+
+\captionsetup[figure]{font=small, labelsep=space, textformat=simple}
+\captionsetup[table]{font=small, labelsep=space, textformat=simple}
+
+
+
 
 % 设置页眉页脚
 \pagestyle{fancy}
 \fancyhf{} % 清除所有页眉页脚
-\fancyhead[C]{\fontsize{14pt}{16.8pt}\selectfont\songti 安徽理工大学毕业设计（论文）} % 四号宋体
+\fancyhead[C]{\fontsize{14pt}{16.8pt}\selectfont\songti 安徽理工大学本科毕业设计说明书} % 四号宋体
 \fancyfoot[C]{\fontsize{10.5pt}{12.6pt}\selectfont\songti \thepage} % 五号宋体
 \setlength{\headheight}{16pt}
 
@@ -212,22 +229,12 @@
 % 公式编号
 \numberwithin{equation}{section} % 按节编号
 
-% URL 和 DOI 自定义设置
-\DeclareFieldFormat{url}{\url{#1}}
-\DeclareFieldFormat{urldate}{#1}
-\ExecuteBibliographyOptions{url=false,doi=false,isbn=false}
-% 设置引用样式为上标带方括号
-\newcommand{\mycite}[1]{\textsuperscript{[}\supercite{#1}\textsuperscript{]}}
-\let\oldcite\cite
-\renewcommand{\cite}[1]{\mycite{#1}}
 
 % 设置章节格式
 \newcommand{\sectionbreak}{\clearpage}
 
 
 
-% 参考文献文件
-\addbibresource{references.bib}
 
 \begin{document}
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -300,10 +307,7 @@
 近年来，中国汽车产业快速发展，智能驾驶技术持续创新，但交通事故发生率仍居高不下。传统道路障碍检测方法存在精度不足、计算复杂度高和人工依赖性强等局限性。为此，本研究提出了一种基于深度学习的车道障碍检测与碰撞预测系统。通过融合传统图像处理与深度学习技术，设计了多模块并行处理架构，有效提升了复杂场景下的障碍物识别与风险预警能力。
 
 
-具体而言，本研究结合Fast-SCNN深度学习模型与传统图像处理技术，采用多项式曲线拟合方法实现车道线精确识别与建模，显著提高了系统在复杂光照和恶劣天气条件下的鲁棒性。针对嵌入式平台的资源限制，采用轻量级YOLOv5n模型进行障碍物检测，并运用知识蒸馏、模型剪枝和量化等技术优化算法，以YOLOv5s作为教师模型提升检测性能，最终实现了算法的高效嵌入式部署。
-
-
-在跟踪算法方面，本研究基于DeepSORT框架进行优化，引入IoU度量机制与类别感知匹配策略，显著提高了多目标跟踪的准确性和鲁棒性。此外，通过构建综合风险评估模型，系统能够实时分析潜在碰撞风险并发出预警。该模型综合考虑时空风险因子、轨迹交叉程度和环境条件等因素，为驾驶安全决策提供了可靠支持。实验结果表明，所提方法在障碍物识别精度、跟踪稳定性和碰撞预警时效性等方面均表现优异，特别适合计算资源受限的嵌入式环境应用。
+具体而言，本研究结合Fast-SCNN深度学习模型与传统图像处理技术，采用多项式曲线拟合方法实现车道线精确识别与建模，显著提高了系统在复杂光照和恶劣天气条件下的鲁棒性。针对嵌入式平台的资源限制，采用轻量级YOLOv5n模型进行障碍物检测，并运用知识蒸馏、模型剪枝和量化等技术优化算法，以YOLOv5s作为教师模型提升检测性能，最终实现了算法的高效嵌入式部署。在跟踪算法方面，本研究基于DeepSORT框架进行优化，引入IoU度量机制与类别感知匹配策略，显著提高了多目标跟踪的准确性和鲁棒性。此外，通过构建综合风险评估模型，系统能够实时分析潜在碰撞风险并发出预警。该模型综合考虑时空风险因子、轨迹交叉程度和环境条件等因素，为驾驶安全决策提供了可靠支持。实验结果表明，所提方法在障碍物识别精度、跟踪稳定性和碰撞预警时效性等方面均表现优异，特别适合计算资源受限的嵌入式环境应用。
 
 
 \vspace{2em}
@@ -325,9 +329,7 @@
 
 In recent years, China's automotive industry has developed rapidly, and intelligent driving technologies have continued to advance, yet traffic accident rates remain persistently high. Traditional road obstacle detection methods suffer from limitations such as insufficient accuracy, high computational complexity, and strong reliance on manual intervention. To address these challenges, this study proposes a deep learning-based lane obstacle detection and collision prediction system. By integrating traditional image processing with deep learning techniques, a multi-module parallel processing architecture is designed, significantly improving obstacle recognition and risk warning capabilities in complex scenarios.
 
-Specifically, this research combines the Fast-SCNN deep learning model with traditional image processing techniques, employing polynomial curve fitting for precise lane line identification and modeling. This approach notably enhances system robustness under challenging lighting and adverse weather conditions. Considering the resource constraints of embedded platforms, a lightweight YOLOv5n model is adopted for obstacle detection, with algorithm optimization techniques including knowledge distillation, model pruning, and quantization. Using YOLOv5s as a teacher model to enhance detection performance, the study achieves efficient embedded deployment.
-
-For tracking algorithms, this work optimizes the DeepSORT framework by introducing an IoU metric mechanism and a category-aware matching strategy, substantially improving multi-object tracking accuracy and robustness. Furthermore, by constructing a comprehensive risk assessment model, the system can analyze potential collision risks in real time and issue warnings. This model incorporates spatiotemporal risk factors, trajectory intersection severity, and environmental conditions to provide reliable support for driving safety decisions. Experimental results demonstrate that the proposed method excels in obstacle recognition precision, tracking stability, and collision warning timeliness, making it particularly suitable for resource-constrained embedded environments.
+Specifically, this research combines the Fast-SCNN deep learning model with traditional image processing techniques, employing polynomial curve fitting for precise lane line identification and modeling. This approach notably enhances system robustness under challenging lighting and adverse weather conditions. Considering the resource constraints of embedded platforms, a lightweight YOLOv5n model is adopted for obstacle detection, with algorithm optimization techniques including knowledge distillation, model pruning, and quantization. Using YOLOv5s as a teacher model to enhance detection performance, the study achieves efficient embedded deployment. For tracking algorithms, this work optimizes the DeepSORT framework by introducing an IoU metric mechanism and a category-aware matching strategy, substantially improving multi-object tracking accuracy and robustness. Furthermore, by constructing a comprehensive risk assessment model, the system can analyze potential collision risks in real time and issue warnings. This model incorporates spatiotemporal risk factors, trajectory intersection severity, and environmental conditions to provide reliable support for driving safety decisions. Experimental results demonstrate that the proposed method excels in obstacle recognition precision, tracking stability, and collision warning timeliness, making it particularly suitable for resource-constrained embedded environments.
 
 
 \vspace{2em}
@@ -351,15 +353,15 @@ For tracking algorithms, this work optimizes the DeepSORT framework by introduci
 % 正文内容开始
 \section{绪论}
 % 第一章的图表编号格式
-\renewcommand{\thefigure}{\thesection.\arabic{figure}}
-\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
 
 \subsection{研究背景及意义}
 
-自动驾驶技术正在引发全球汽车产业的革命性变革。近年来，我国汽车产业保持高速发展态势。据《2023年汽车工业经济运行报告》显示\cite{auto2023}，中国已连续十五年蝉联全球汽车销量冠军。公安部统计数据显示，截至2023年我国汽车保有量达3.36亿辆，驾驶员数量达4.86亿人。持续扩大的市场规模伴随显著的安全挑战——道路交通事故发生概率也相应上升，这不仅威胁人民生命安全，还造成巨大经济损失。世界卫生组织（World Health Organization, WHO）《2023年道路安全现状报告》\cite{who2023}指出，2010年以来全球年均道路交通事故致死135万人，致伤2000万至5000万人，其中94\%的事故与人为因素直接相关，导致大量人员伤残。此类事故造成的经济损失约占多数国家国内生产总值（Gross Domestic Product, GDP）的3\%。
+自动驾驶技术正在引发全球汽车产业的革命性变革。近年来，我国汽车产业保持高速发展态势。据《2023年汽车工业经济运行报告》\cite{auto2023}显示，中国已连续十五年蝉联全球汽车销量冠军。公安部统计数据显示，截至2023年我国汽车保有量达3.36亿辆，驾驶员数量达4.86亿人。持续扩大的市场规模伴随显著的安全挑战——道路交通事故发生概率也相应上升，这不仅威胁人民生命安全，还造成巨大经济损失。世界卫生组织（World Health Organization, WHO）《2023年道路安全现状报告》\cite{who2023}指出，2010年以来全球年均道路交通事故致死135万人，致伤2000万至5000万人，其中94\%的事故与人为因素直接相关，导致大量人员伤残。此类事故造成的经济损失约占多数国家国内生产总值（Gross Domestic Product, GDP）的3\%。
 
 传统驾驶存在三重安全隐患：感知局限、反应迟滞和行为不可控。针对此问题，《自然-通讯》杂志基于2016-2022年间2100辆配备高级自动驾驶系统的车辆与35133辆人工驾驶车辆的交通事故数据展开研究\cite{nature2022}。该研究表明：自动驾驶车辆在多数场景下的安全性优于人工驾驶，其追尾和侧面碰撞风险分别仅为人工驾驶的45.7\%和17.1\%，尤其在车道保持和自适应车距调节方面表现突出。
 
@@ -411,7 +413,7 @@ For tracking algorithms, this work optimizes the DeepSORT framework by introduci
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/chapter1/structure.png}
-\caption{技术路线图}
+\caption{\textbf{技术路线图}}
 \label{fig:arch}
 \end{figure}
 
@@ -437,7 +439,7 @@ For tracking algorithms, this work optimizes the DeepSORT framework by introduci
 % \begin{figure}[H]
 %     \centering
 %     \includegraphics[width=0.8\textwidth]{figures/chapter2/pcm.png}
-%     \caption{生产者-消费者模型}
+%     \caption\textbf{生产者-消费者模型}
 %     \label{fig:pcm}
 % \end{figure}
 
@@ -450,8 +452,8 @@ For tracking algorithms, this work optimizes the DeepSORT framework by introduci
 
 \newpage
 \section{相关理论基础}
-\renewcommand{\thefigure}{\thesection.\arabic{figure}}
-\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -483,7 +485,7 @@ M(x,y) = \text{median}\{ f(i,j)|i \in \lbrack x - k,x + k\rbrack,j \in \lbrack y
 \begin{center}
 (a) 噪声图像 \hspace{4cm} (b) 中值滤波
 \end{center}
-\caption{中值滤波图}
+\caption{\textbf{中值滤波图}}
 \label{fig:medium_filter}
 \end{figure}
 
@@ -502,7 +504,7 @@ G(x,y) = \frac{1}{2\pi\sigma^2}e^{-\frac{x^2+y^2}{2\sigma^2}}
 \begin{center}
 (a) 噪声图像 \hspace{3cm} (b) 高斯滤波
 \end{center}
-\caption{高斯滤波图}
+\caption{\textbf{高斯滤波图}}
 \label{fig:gauss_filtered}
 \end{figure}
 
@@ -533,7 +535,7 @@ BF[I]_p = \frac{1}{W_p}\sum_{q \in S}G_{\sigma_s}(||p-q||)G_{\sigma_r}(|I_p-I_q|
 \begin{center}
 (a) 噪声图像 \hspace{3cm} (b) 各向异性扩散滤波
 \end{center}
-\caption{各向异性扩散滤波图}
+\caption{\textbf{各向异性扩散滤波图}}
 \label{fig:ani_diffusion}
 \end{figure}
 
@@ -708,7 +710,7 @@ $3$次多项式模型可有效描述弯道曲率，为车道偏离预警提供�
 \begin{center}
 (a) 原始图像 \hspace{3cm} (b) 多项式拟合
 \end{center}
-\caption{多项式拟合车道线}
+\caption{\textbf{多项式拟合车道线}}
 \label{fig:polynomial_fit}
 \end{figure}
 
@@ -826,14 +828,14 @@ YOLOv5提供了不同复杂度的模型变体（YOLOv5n/s/m/l/x），但无论�
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/chapter2/yolov5.png}
-\caption{YOLOv5模型在COCO数据集测试结果}
+\caption{\textbf{YOLOv5模型在COCO数据集测试结果 \cite{ultralytics2023}}}
 \label{fig:yolov5-comparison}
 \end{figure}
 
 各个尺度的预训练参数如表\ref{tab:yolov5-params}所示。
 \begin{table}[H]
 \centering
-\caption{YOLOv5模型系列参数对比}
+\caption{\textbf{YOLOv5模型系列参数对比 \cite{ultralytics2023}}}
 \label{tab:yolov5-params}
 \begin{tabular}{lccccc}
 \hline
@@ -909,8 +911,8 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
 
 % --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{\thesection.\arabic{figure}}
-\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -923,7 +925,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
 
 
 \begin{algorithm}[H]
-\caption{车道线检测算法}
+\caption{\textbf{车道线检测算法}}
 \label{alg:lane_detection}
 \begin{algorithmic}[1]
 \REQUIRE 道路场景图像 $Input Image$
@@ -976,7 +978,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) 原始图像 \hspace{3cm} (b) 颜色分割结果
     \end{center}
-    \caption{颜色分割处理效果图}
+    \caption{\textbf{颜色分割处理效果图}}
     \label{fig:color_seg}
 \end{figure}
 
@@ -990,7 +992,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) 颜色分割结果 \hspace{3cm} (b) DoG边缘检测结果
     \end{center}
-    \caption{多尺度DoG边缘检测效果图}
+    \caption{\textbf{多尺度DoG边缘检测效果图}}
     \label{fig:dog_edge}
 \end{figure}
 
@@ -1004,7 +1006,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) DoG边缘检测结果 \hspace{3cm} (b) 形态学增强后结果
     \end{center}
-    \caption{边缘增强处理效果图}
+    \caption{\textbf{边缘增强处理效果图}}
     \label{fig:edge_enhance}
 \end{figure}
 
@@ -1018,7 +1020,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) 原始图像 \hspace{3cm} (b) ROI区域可视化
     \end{center}
-    \caption{ROI区域定义图}
+    \caption{\textbf{ROI区域定义图}}
     \label{fig:roi}
 \end{figure}
 
@@ -1028,7 +1030,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) 边缘增强结果 \hspace{3cm} (b) ROI掩码应用结果
     \end{center}
-    \caption{ROI掩码应用效果图}
+    \caption{\textbf{ROI掩码应用效果图}}
     \label{fig:roi_mask}
 \end{figure}
 
@@ -1042,7 +1044,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) ROI掩码处理结果 \hspace{3cm} (b) 直线检测结果
     \end{center}
-    \caption{霍夫变换直线检测效果图}
+    \caption{\textbf{霍夫变换直线检测效果图}}
     \label{fig:line_detect}
 \end{figure}
 
@@ -1055,7 +1057,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) 检测到的直线段 \hspace{3cm} (b) 多项式拟合结果
     \end{center}
-    \caption{车道线拟合效果图}
+    \caption{\textbf{车道线拟合效果图}}
     \label{fig:lane_fit}
 \end{figure}
 
@@ -1065,7 +1067,7 @@ DeepSORT算法相比传统方法具有以下显著优势：鲁棒性增强，通
     \begin{center}
     (a) 原始图像 \hspace{3cm} (b) 车道线检测结果
     \end{center}
-    \caption{车道线检测结果}
+    \caption{\textbf{车道线检测结果}}
     \label{fig:final_result}
 \end{figure}
 
@@ -1108,7 +1110,7 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/chapter3/fastscnn_training_analysis.png}
-    \caption{FastSCNN模型训练分析}
+    \caption{\textbf{FastSCNN模型训练分析}}
     \label{fig:fastscnn_training}
 \end{figure}
 
@@ -1133,7 +1135,7 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
     \begin{center}
     (a) 传统图像处理结果 \hspace{3cm} (b) 融合方法结果
     \end{center}
-    \caption{图像处理与语义分割融合对比}
+    \caption{\textbf{图像处理与语义分割融合对比}}
     \label{fig:fusion_comparison}
 \end{figure}
 
@@ -1146,8 +1148,8 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 
 % ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{\thesection.\arabic{figure}}
-\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -1183,7 +1185,7 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
     \begin{center}
     (a) 目标检测（昼） \hspace{3cm} (b) 目标检测（夜）
     \end{center}
-    \caption{复杂路况检测效果}
+    \caption{\textbf{复杂路况检测效果}}
     \label{fig:detection}
 \end{figure}
 
@@ -1206,7 +1208,7 @@ FastSCNN模型在KITTI道路数据集验证集上进行了全面评估，主要�
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/chapter4/val.png}
-    \caption{模型训练验证性能曲线}
+    \caption{\textbf{模型训练验证性能曲线}}
     \label{fig:training_validation_curves}
 \end{figure}
 
@@ -1325,7 +1327,7 @@ L_{\text{KD}} = L_{\text{box}} + L_{\text{conf}} + L_{\text{cls}}
         \draw[->] (s_out) -- (loss);
         \draw[->] (loss) -- (opt);
     \end{tikzpicture}
-    \caption{知识蒸馏训练流程}
+    \caption{\textbf{知识蒸馏训练流程}}
     \label{fig:distill-flow}
 \end{figure}
 
@@ -1339,7 +1341,7 @@ L_{\text{KD}} = L_{\text{box}} + L_{\text{conf}} + L_{\text{cls}}
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figures/chapter4/ptc.png}
-    \caption{处理速度对比图}
+    \caption{\textbf{处理速度对比图}}
     \label{fig:processing_time}
 \end{figure}
 
@@ -1348,7 +1350,7 @@ L_{\text{KD}} = L_{\text{box}} + L_{\text{conf}} + L_{\text{cls}}
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/chapter4/fps.png}
-    \caption{帧率对比图}
+    \caption{\textbf{帧率对比图}}
     \label{fig:fps_comparison}
 \end{figure}
 
@@ -1357,7 +1359,7 @@ L_{\text{KD}} = L_{\text{box}} + L_{\text{conf}} + L_{\text{cls}}
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/chapter4/three_compare.png}
-    \caption{模型精度和损失对比}
+    \caption{\textbf{模型精度和损失对比}}
     \label{fig:accuracy_loss_comparison}
 \end{figure}
 
@@ -1368,7 +1370,7 @@ L_{\text{KD}} = L_{\text{box}} + L_{\text{conf}} + L_{\text{cls}}
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/chapter4/final_performance.png}
-    \caption{模型综合性能比较}
+    \caption{\textbf{模型综合性能比较}}
     \label{fig:comprehensive_performance}
 \end{figure}
 
@@ -1439,7 +1441,7 @@ arrow/.style={->, >=stealth, thick}
 \draw[->, dashed] (note1) -- (association);
 
 \end{tikzpicture}
-\caption{DeepSORT算法框架}
+\caption{\textbf{DeepSORT算法框架}}
 \label{fig:deepsort}
 \end{figure}
 
@@ -1483,7 +1485,7 @@ DeepSORT采用三态轨迹生命周期管理机制，如图\ref{fig:track_lifecy
 \draw[arrow, dashed] (-2, 0) to node[above] {新检测} (tentative);
 
 \end{tikzpicture}
-\caption{轨迹状态转换图}
+\caption{\textbf{轨迹状态转换图}}
 \label{fig:track_lifecycle}
 \end{figure}
 
@@ -1678,7 +1680,7 @@ d_{IoU}(i,j) = 1 - IoU(i,j)
         \par\vspace{0.5em}
         （b）第300帧跟踪结果
     \end{minipage}
-    \caption{障碍物跟踪效果展示}
+    \caption{\textbf{障碍物跟踪效果展示}}
     \label{fig:track_result}
 \end{figure}
 
@@ -1692,8 +1694,8 @@ d_{IoU}(i,j) = 1 - IoU(i,j)
 
 % ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{\thesection.\arabic{figure}}
-\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -1794,7 +1796,7 @@ Alert = \begin{cases}
         \par\vspace{0.5em}
         （b）第80帧
     \end{minipage}
-    \caption{碰撞预测}
+    \caption\textbf{碰撞预测}
     \label{fig:ttc_result}
 \end{figure}
 
@@ -1804,8 +1806,8 @@ Alert = \begin{cases}
 
 % ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \newpage
-\renewcommand{\thefigure}{\thesection.\arabic{figure}}
-\renewcommand{\thetable}{\thesection.\arabic{table}}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
 \renewcommand{\figurename}{图}
 \setcounter{figure}{0} % 重置图表计数器
 \setcounter{equation}{0} % 重置公式计数器
@@ -1820,58 +1822,44 @@ Alert = \begin{cases}
 
     \item 轻量级障碍物检测：基于YOLOv5系列开发了适用于嵌入式设备的障碍物检测模型。采用知识蒸馏技术，以YOLOv5s为教师模型训练YOLOv5n学生模型，在参数量减少70\%的前提下，保持了97.6\%的检测性能。针对交通场景特点，设计了障碍物类别优先级策略，合理平衡了不同类型目标的检测敏感度。
 
-    \item 高效多目标跟踪：改进DeepSORT算法框架，设计了适合车载环境的目标跟踪方案。通过优化卡尔曼滤波器参数和基于IoU的关联度量，在保持高精度跟踪的同时，将计算复杂度降低了50\%以上，使系统能够在树莓派等资源受限平台上稳定运行。
+    \item 高效多目标跟踪：改进DeepSORT算法框架，设计了适合车载环境的目标跟踪方案。通过优化卡尔曼滤波器参数和基于IoU的关联度量，在保持高精度跟踪的同时，将计算复杂度降低了50\%以上，使系统能够在树莓派、等资源受限平台上稳定运行。
 
     \item 碰撞风险评估模型：构建了多层次碰撞预测框架，融合目标相对运动状态、道路空间约束和时间距离因素，提出基于TTC和路径规划的综合风险评估模型。通过分级预警机制，系统能够在0.2秒内完成从感知到预警的全流程处理，为驾驶员提供及时、可靠的安全辅助信息。
 \end{parlist}
+%打印参考文献
 
-\subsection{研究不足}
+\subsection{未来展望}
 
-尽管本研究在车道障碍检测与碰撞预测方面取得了一定成果，但仍存在以下不足：
-
-\begin{parlist}
-    \item 极端场景适应性：当前系统在极端天气条件（如大雪、浓雾）和低光照环境下表现仍有待提高。特别是在雨雪导致的路面反光和模糊视野情况下，车道线检测准确率明显下降，影响系统整体可靠性。
-
-    \item 目标检测种类不足：目标检测模型的训练类别较少，这对后期碰撞预测的分级、分类别碰撞预测有一定影响，分类较少可能导致碰撞预测概率失误。
-
-    \item 目标遮挡处理：虽然改进了跟踪算法，但在严重遮挡场景下，目标轨迹预测仍存在不稳定性。尤其是在车流密集的城市道路环境中，部分遮挡导致的ID切换问题影响了碰撞风险评估的连续性。
-
-    \item 计算资源平衡：为适应嵌入式平台，模型参数进行了大幅精简，牺牲了部分检测精度。这种权衡使系统在某些复杂场景下可能漏检小尺寸或远距离目标，特别是在高速行驶环境中。
-
-    \item 多传感器融合不足：当前系统主要依赖单一摄像头数据，缺乏与雷达、激光雷达等传感器的信息融合能力，限制了系统的感知深度和全天候工作能力。
-
-    \item 动态场景建模局限：采用的线性运动模型难以准确预测复杂交通参与者的突变行为，对于急转弯、突然减速等非线性运动模式的预测精度有限。
-\end{parlist}
-
-\subsection{未来研究展望}
-
-基于本研究的成果和局限性，未来研究可在以下方向进一步拓展：
+本研究虽在车道障碍检测与碰撞预测领域取得一定进展，但仍存在局限性，这些局限也指明了未来研究方向：
 
 \begin{parlist}
-    \item 丰富数据集中的类别，通过多数据集融合，训练更多类别的目标检测，丰富障碍物种类，从而对不同障碍物的碰撞风险因子改进，达到更优的碰撞预测效果，降低在一般场景下的误报率。
+    \item 环境适应性问题与解决路径：当前系统在极端天气（大雪、浓雾）和低光照环境下表现不佳，尤其是雨雪导致的路面反光和模糊视野条件下，车道线检测准确率显著下降。未来研究将整合摄像头、毫米波雷达和超声波传感器优势，构建多模态感知系统，提高全天候全场景感知能力，特别是在视觉受限条件下，利用雷达提供可靠的距离和速度信息。
 
-    \item 多模态感知融合：整合摄像头、毫米波雷达和超声波传感器的互补优势，构建多模态感知系统，提高全天候和全场景感知能力。特别是在视觉受限条件下，雷达数据可提供可靠的距离和速度信息，增强系统的环境适应性。
+    \item 目标检测类别扩展：目前训练的检测类别较少，限制了碰撞预测的分级精度。未来将通过多数据集融合，训练更丰富类别的目标检测模型，优化不同障碍物的碰撞风险评估因子，提高预测准确性，降低一般场景的误报率。
 
-    \item 动态场景理解增强：引入基于注意力机制的时空序列模型，如Transformer架构，提升系统对交通参与者意图和行为的预测能力。这将使预警系统从单纯的碰撞预测向行为理解与风险推理方向发展。
+    \item 目标遮挡与高级跟踪技术：在严重遮挡场景下，特别是车流密集的城市道路环境中，目标轨迹预测存在不稳定性，部分遮挡导致的ID切换问题影响碰撞风险评估连续性。未来将引入基于注意力机制的时空序列模型（如Transformer架构），提升系统对交通参与者意图和行为的预测能力，使预警系统从碰撞预测向行为理解与风险推理方向发展。
 
-    \item 边缘-云协同架构：设计边缘计算和云服务协同的分层系统架构，在保证核心安全功能本地实时响应的同时，利用云端资源进行模型更新、场景分析和历史数据挖掘，提高系统智能化水平。
+    \item 计算资源优化策略：为适应嵌入式平台，当前模型参数大幅精简，牺牲部分检测精度，导致在复杂场景可能漏检小尺寸或远距离目标。未来将设计边缘计算和云服务协同的分层系统架构，在确保核心安全功能本地实时响应的同时，利用云端资源进行模型更新、场景分析和历史数据挖掘，提高系统智能化水平。
 
-    \item 自适应学习能力：探索在线学习和增量更新机制，使系统能够从实际驾驶数据中持续优化，自动适应不同驾驶习惯和道路环境，形成个性化的安全辅助策略。
+    \item 传感器融合与车路协同：当前系统主要依赖单一摄像头数据，缺乏多传感器融合能力，限制了感知深度和全天候工作能力。未来将研究基于5G/V2X通信的车路协同感知技术，利用路侧基础设施信息扩展单车感知边界，形成网络化的协同感知与风险预警系统，尤其针对视线受限的交叉路口等高风险区域。
 
-    \item 车路协同感知：研究基于5G/V2X通信的车路协同感知技术，利用路侧基础设施提供的环境信息扩展单车感知边界，形成网络化的协同感知与风险预警系统，特别是对于视线受限的交叉路口等高风险区域。
+    \item 动态建模与自适应学习：采用的线性运动模型难以准确预测复杂交通参与者的突变行为，对急转弯、突然减速等非线性运动模式预测精度有限。未来将探索在线学习和增量更新机制，使系统能从实际驾驶数据中持续优化，自动适应不同驾驶习惯和道路环境，形成个性化安全辅助策略。
 
-    \item 人机交互优化：深入研究驾驶员认知模式和注意力分配特性，优化预警信息的呈现方式和触发时机，提高驾驶员对系统预警的接受度和反应效率，减少误报和漏报导致的用户体验问题。
+    \item 人机交互优化：未来将深入研究驾驶员认知模式和注意力分配特性，优化预警信息的呈现方式和触发时机，提高驾驶员对系统预警的接受度和反应效率，减少误报和漏报导致的用户体验问题。
 \end{parlist}
 
-本研究为基于深度学习的车道障碍检测与碰撞预测方法提供了一种实用性解决方案，为提升道路交通安全贡献了新的技术手段。随着计算硬件性能的提升、深度学习算法的进步以及多传感器融合技术的发展，未来的辅助驾驶感知系统将更加智能、可靠，为实现"零事故"的交通愿景提供坚实技术支撑。
+本研究为基于深度学习的车道障碍检测与碰撞预测方法提供了实用性解决方案，为提升道路交通安全贡献了新的技术手段。随着计算硬件性能提升、深度学习算法进步以及多传感器融合技术发展，未来的辅助驾驶感知系统将更加智能、可靠，为实现"零事故"交通愿景提供坚实技术支撑。
 
-% 打印参考文献
 \clearpage
 \addcontentsline{toc}{section}{参考文献}
-\printbibliography
-
+\bibliographystyle{gbt7714-numerical}
+\bibliography{references}
 \clearpage
+
+
+\phantomsection
 \section*{致谢}
+\addcontentsline{toc}{section}{致谢}
 时光荏苒，岁不饶人；行文至此，无语凝噎。
 
 我们于四年中见证了祖国的蓬勃发展，经历了许多相逢，留下了属于自己的故事，然而今后将各奔东西。愿我们都能在各自的人生道路上劈风斩棘，走在属于各自的“旷野”。

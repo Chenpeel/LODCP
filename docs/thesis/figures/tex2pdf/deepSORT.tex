@@ -1,0 +1,53 @@
+\documentclass{article}
+\usepackage{ctex}  % 支持中文
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes,positioning,fit}
+
+\begin{document}
+\pagestyle{empty}  % 无页眉页脚
+\begin{tikzpicture}[
+  box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, text centered, rounded corners},
+  decision/.style={diamond, draw, thick, aspect=2, minimum width=2.5cm, text centered},
+  arrow/.style={thick,->,>=stealth}]
+
+% 主流程节点
+\node[box] (input) at (0,0) {输入图片};
+\node[box] (preprocess) at (0,-2) {图像预处理};
+\node[decision] (first) at (0,-4) {第一帧?};
+\node[box] (detect1) at (0,-6) {目标检测};
+\node[box] (feature) at (0,-8) {特征提取};
+\node[box] (id) at (-3,-10) {ID 初始化};
+\node[box] (kalman_init) at (3,-10) {卡尔曼初始化};
+\node[box] (track) at (0,-12) {轨迹管理};
+\node[box] (output) at (0,-14) {输出结果};
+
+% 右侧分支节点
+\node[box] (detect2) at (6,-4) {目标检测};
+\node[box] (predict) at (6,-6) {卡尔曼预测};
+\node[box] (matching) at (6,-8) {特征匹配};
+\node[box] (associate) at (6,-10) {数据关联};
+
+% 连接箭头
+\draw[arrow] (input) -- (preprocess);
+\draw[arrow] (preprocess) -- (first);
+\draw[arrow] (first) -- node[right] {是} (detect1);
+\draw[arrow] (first) -- node[above] {否} (detect2);
+\draw[arrow] (detect1) -- (feature);
+\draw[arrow] (feature) -- (id);
+\draw[arrow] (feature) -- (kalman_init);
+\draw[arrow] (id) -- (track);
+\draw[arrow] (detect2) -- (predict);
+\draw[arrow] (predict) -- (matching);
+\draw[arrow] (matching) -- (associate);
+
+% 避免交叉的连接
+\draw[arrow] (kalman_init) -- ++(0,-1) -| (track);
+\draw[arrow] (associate) -- ++(0,-1) -| (track); % 从下侧连接到轨迹管理
+
+\draw[arrow] (track) -- (output);
+
+% 循环箭头
+\draw[arrow] (output) -- (-4.5,-14) -- (-4.5,0) -- (input);
+
+\end{tikzpicture}
+\end{document}
