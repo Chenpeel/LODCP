@@ -8,7 +8,7 @@ Despite the recent advancements that Autonomous Vehicles have shown in their pot
 
 > 翻译：
 
-尽管⾃动驾驶汽⻋在提⾼安全性和操作性的潜力⽅⾯已取得进展，但由于现实世界⾃动驾驶汽⻋事故数据的 稀缺，⾃动驾驶汽⻋和⼈类驾驶汽⻋在事故中的区别仍然⽆法确定。我们利⽤ 2100 个⾼级驾驶系统和⾼ 级驾驶辅助系统以及 35113 个⼈类驾驶汽⻋事故数据，调查了⾃动驾驶汽⻋与⼈类驾驶汽⻋在事故发 ⽣率上的差异。采⽤匹配病例对照设计来调查⾃动驾驶汽⻋和⼈类驾驶汽⻋事故的差异特征。分析表明，在⼤ 多数类似的事故场景中，配备⾼级驾驶系统的汽⻋发⽣事故的概率通常低于⼈类驾驶汽⻋。然⽽，在黎明/⻩昏或 转弯条件下，⾼级驾驶系统事故发⽣的频率是⼈类驾驶汽⻋事故的 5.25 倍和 1.98 倍。我们的研究揭⽰了⾃动驾驶汽⻋和⼈类驾驶汽⻋之间的事故⻛险差异，为⾃动驾驶技术和安全增强的未来发展 提供了参考。
+尽管自动驾驶汽车在提升安全性和操作性能方面已经取得了一些进展，但因为现实世界中自动驾驶汽车的事故数据比较少，所以自动驾驶汽车和人类驾驶汽车在事故中的区别还是很难确定。我们用2100个高级驾驶系统和高级驾驶辅助系统，还有35113个人类驾驶汽车事故数据，研究了自动驾驶汽车和人类驾驶汽车在事故发生率上的不同。我们用匹配病例对照设计来分析自动驾驶汽车和人类驾驶汽车事故的差异。分析发现，在大多数类似的事故情况下，用高级驾驶系统的汽车发生事故的概率通常比人类驾驶汽车低。但是，在黎明或黄昏时段，或者转弯的时候，用高级驾驶系统的汽车发生事故的频率是比人类驾驶汽车高5.25倍和1.98倍。我们的研究揭示了自动驾驶汽车和人类驾驶汽车之间的事故风险差异，为自动驾驶技术和安全提升的未来发展提供了参考。
 
 > 原文：
 
@@ -2339,13 +2339,13 @@ NNs, and propose a shallow learning to downsample
 module for fast and efficient multi-branch low-level
 feature extraction.
 3. We specifically design Fast-SCNN to be of low ca-
-  pacity, and we empirically validate that running train-
-  ing for more epochs is equivalently successful to pre-
-  training with ImageNet or training with additional
-  coarse data in our small capacity network.
-  Moreover, we employ Fast-SCNN to subsampled input
-  data, achieving state-of-the-art performance without the
-  need for redesigning our network.
+    pacity, and we empirically validate that running train-
+    ing for more epochs is equivalently successful to pre-
+    training with ImageNet or training with additional
+    coarse data in our small capacity network.
+    Moreover, we employ Fast-SCNN to subsampled input
+    data, achieving state-of-the-art performance without the
+    need for redesigning our network.
 
 
 
@@ -2550,7 +2550,7 @@ the low capacity network.
 
 2. 我们采用了在离线深度神经网络 (DCNN) 中流行的跳跃连接 (skip connection)，并提出了一种浅层学习下采样模块，以实现快速高效的多分支低级特征提取。
 3. 我们专门设计了低容量的 Fast-SCNN，并通过经验验证，在我们的小容量网络中，进行更多轮次的训练与使用 ImageNet 进行预训练或使用额外的粗略数据进行训练的效果相同。
-  此外，我们使用 Fast-SCNN 对输入数据进行下采样，无需重新设计网络即可实现最佳性能。
+    此外，我们使用 Fast-SCNN 对输入数据进行下采样，无需重新设计网络即可实现最佳性能。
 
 
 
