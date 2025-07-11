@@ -8,7 +8,8 @@
 \begin{tikzpicture}[
   box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, text centered, rounded corners},
   decision/.style={diamond, draw, thick, aspect=2, minimum width=2.5cm, text centered},
-  arrow/.style={thick,->,>=stealth}]
+  arrow/.style={thick,->,>=stealth},
+  fusion/.style={dashed, thick, draw=red, inner sep=10pt}]
 
 % 主流程节点
 \node[box] (input) at (0,0) {输入图片};
@@ -48,6 +49,11 @@
 
 % 循环箭头
 \draw[arrow] (output) -- (-4.5,-14) -- (-4.5,0) -- (input);
+
+% 使用虚线圈出深度学习与运动信息融合的部分
+\node[fusion, fit=(feature) (kalman_init) (predict) (matching) (associate)] (fusion) {};
+% 将标注放在框的中间位置，并进行换行
+\node[text=red, fill=white, font=\bfseries, align=center] at (fusion.center) {深度学习特征\\ 与\\ 运动信息融合};
 
 \end{tikzpicture}
 \end{document}
