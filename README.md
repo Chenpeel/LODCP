@@ -123,4 +123,4 @@ C++实现部分依赖于PlatformIO环境，详细配置见`firmware/platformio.i
 ## 技术路线
 
 
-![结构图](./docs/thesis/figures/chapter1/structure.png)
+![结构图](./docs/structure.png)
